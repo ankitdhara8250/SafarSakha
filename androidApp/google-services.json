@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "264844227346",
+    "project_id": "safarsakha-a0056",
+    "storage_bucket": "safarsakha-a0056.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:264844227346:android:f9d54e37688c7c0a7779cb",
+        "android_client_info": {
+          "package_name": "com.safarsakha.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBoCFVP-AKoi5fgAIRHYGGkfHURHRorcaI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

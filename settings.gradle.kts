@@ -24,4 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "SafarSakha"
 include(":androidApp")
-include(":shared")
+include(":composeApp")
