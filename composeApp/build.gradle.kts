@@ -1,29 +1,53 @@
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.android.kotlin.multiplatform.library)
+    alias(libs.plugins.kotlin.multiplatform)// Enables KMP plugin
+    alias(libs.plugins.kotlin.compose)// Compose compiler plugin
+    alias(libs.plugins.compose.multiplatform)// Enables CMP
+    alias(libs.plugins.android.kotlin.multiplatform.library)// Android target for KMP library
+    alias(libs.plugins.kotlin.serialization)// Kotlin serialization support
 }
 
 kotlin {
+    // Android target for KMP library
     androidLibrary {
         namespace = "com.safarsakha.composeapp"
         compileSdk = 36
         minSdk = 24
     }
 
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
+    iosX64()// iOS simulator Intel target
+    iosArm64()// iPhone/iPad target
+    iosSimulatorArm64()// iOS simulator Apple Silicon target
+
+    jvm()// Desktop JVM target
+
+    jvmToolchain(17)
+
+    @OptIn(ExperimentalKotlinGradlePluginApi::class)
+    jvm {
+        mainRun {
+            // Runs composeApp as desktop JVM application
+            mainClass.set("com.safarsakha.MainKt")
+        }
+    }
 
     sourceSets {
         commonMain.dependencies {
+            // Compose runtime
             implementation("org.jetbrains.compose.runtime:runtime:1.8.2")
+            // Compose layouts
             implementation("org.jetbrains.compose.foundation:foundation:1.8.2")
+//            Material3 UI
             implementation("org.jetbrains.compose.material3:material3:1.8.2")
+            // Compose UI core
             implementation("org.jetbrains.compose.ui:ui:1.8.2")
+            // CMP resources
             implementation("org.jetbrains.compose.components:components-resources:1.8.2")
-
+            // JSON serialization
             implementation(libs.kotlinx.serialization.json)
+            // Navigation3 for CMP
+            implementation("org.jetbrains.androidx.navigation3:navigation3-ui:1.0.0-alpha05")
         }
 
         commonTest.dependencies {
@@ -34,5 +58,10 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.lifecycle.runtime.ktx)
         }
+
+        jvmMain.dependencies {
+            implementation("org.jetbrains.compose.desktop:desktop-jvm-windows-x64:1.8.2")
+        }
     }
 }
+
