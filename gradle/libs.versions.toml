@@ -11,6 +11,12 @@ activityCompose = "1.13.0"
 composeBom = "2024.09.00"
 kotlinxSerializationJson = "1.7.3"
 nav3 = "1.0.0-alpha05"
+googleGmsGoogleServices = "4.4.4"
+firebaseBom = "33.10.0"
+firebaseAuth = "23.2.0"
+firebaseFirestore = "25.1.2"
+firebaseStorage = "21.0.1"
+firebaseCommon = "21.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,6 +43,13 @@ jetbrains-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:naviga
 
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 
+# Firebase
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
+firebase-storage = { group = "com.google.firebase", name = "firebase-storage", version.ref = "firebaseStorage" }
+firebase-common-ktx = { group = "com.google.firebase", name = "firebase-common-ktx", version.ref = "firebaseCommon" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
@@ -48,3 +61,4 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
+google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }

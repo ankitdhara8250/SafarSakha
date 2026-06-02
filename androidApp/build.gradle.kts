@@ -1,9 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)// Android app plugin
     alias(libs.plugins.kotlin.android)// Kotlin for Android plugin
-    alias(libs.plugins.kotlin.compose) // Compose compiler plugin
+    alias(libs.plugins.kotlin.compose)// Compose compiler plugin
+    alias(libs.plugins.google.gms.google.services)   // plugin reads google-services.json and connects Firebase to app
 }
-
 android {
     namespace = "com.safarsakha.app"
     compileSdk = 36
@@ -35,6 +35,8 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     // Needed for setContent { } in MainActivity
     implementation(libs.androidx.activity.compose)
+    // where Firebase Auth actually gets added
+    implementation(libs.firebase.auth)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

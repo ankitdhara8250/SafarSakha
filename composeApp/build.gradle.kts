@@ -38,7 +38,7 @@ kotlin {
             implementation("org.jetbrains.compose.runtime:runtime:1.8.2")
             // Compose layouts
             implementation("org.jetbrains.compose.foundation:foundation:1.8.2")
-//            Material3 UI
+            // Material3 UI
             implementation("org.jetbrains.compose.material3:material3:1.8.2")
             // Compose UI core
             implementation("org.jetbrains.compose.ui:ui:1.8.2")
@@ -48,6 +48,20 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             // Navigation3 for CMP
             implementation("org.jetbrains.androidx.navigation3:navigation3-ui:1.0.0-alpha05")
+            
+            // ViewModel
+            implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+            
+            // Firebase GitLive
+            implementation("dev.gitlive:firebase-common:2.1.0")
+            implementation("dev.gitlive:firebase-firestore:2.1.0")
+            implementation("dev.gitlive:firebase-storage:2.1.0")
+            
+            // Coroutines
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+            
+            // Datetime
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
         }
 
         commonTest.dependencies {
@@ -57,6 +71,13 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.lifecycle.runtime.ktx)
+            
+            // Firebase Android SDKs
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.firebase.auth)
+            implementation(libs.firebase.firestore)
+            implementation(libs.firebase.storage)
+            implementation(libs.firebase.common.ktx)
         }
 
         jvmMain.dependencies {
@@ -64,4 +85,3 @@ kotlin {
         }
     }
 }
-
