@@ -9,7 +9,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -17,10 +19,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
 import com.safarsakha.data.remote.firebase.FirebaseTourPackageDataSource
 import com.safarsakha.data.repository.impl.TourPackageRepositoryImpl
 import com.safarsakha.domain.usecase.tourpackage.CreateTourPackageUseCase
+import kotlinx.datetime.Clock
 import kotlin.reflect.KClass
+
+@Composable
+expect fun ImagePicker(
+    show: Boolean,
+    onImagePicked: (ByteArray) -> Unit,
+    onDismiss: () -> Unit
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,23 +45,30 @@ fun CreateTourPackageScreen(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
                 @Suppress("UNCHECKED_CAST")
-                return CreateTourPackageViewModel(createUseCase) as T
+                return CreateTourPackageViewModel(createUseCase, repository) as T
             }
         }
     )
 
     val uiState by viewModel.uiState.collectAsState()
+    var showImagePicker by remember { mutableStateOf(false) }
 
     // Handle initial reset and one-time navigation event
     LaunchedEffect(Unit) {
-        // IMPORTANT: Reset the form every time this screen is entered.
-        // This ensures the form is blank on the second "Add" attempt.
         viewModel.handleEvent(CreateTourPackageEvent.ResetSuccess)
-        
         viewModel.navigationEvent.collect {
             onNavigateBack()
         }
     }
+
+    ImagePicker(
+        show = showImagePicker,
+        onImagePicked = { bytes ->
+            viewModel.handleEvent(CreateTourPackageEvent.ImageSelected(bytes, "tour_${Clock.System.now().toEpochMilliseconds()}.jpg"))
+            showImagePicker = false
+        },
+        onDismiss = { showImagePicker = false }
+    )
 
     Scaffold(
         topBar = {
@@ -65,7 +83,6 @@ fun CreateTourPackageScreen(
                 },
                 navigationIcon = {
                     TextButton(onClick = {
-                        // Clear state on manual back/cancel as well
                         viewModel.handleEvent(CreateTourPackageEvent.ResetSuccess)
                         onNavigateBack()
                     }) {
@@ -166,21 +183,44 @@ fun CreateTourPackageScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(120.dp)
-                            .background(Color(0xFFF1F5F9), RoundedCornerShape(8.dp)),
+                            .height(180.dp)
+                            .background(Color(0xFFF1F5F9), RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         if (uiState.selectedImageBytes != null) {
-                            Text("✅ Image Selected", color = Color(0xFF059669))
+                            AsyncImage(
+                                model = uiState.selectedImageBytes,
+                                contentDescription = "Selected Tour Image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            // Success badge overlay
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text("✅ Selected", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            }
+                        } else if (!uiState.imageUrl.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = uiState.imageUrl,
+                                contentDescription = "Tour Image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
                         } else {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("🖼️", fontSize = 32.sp)
+                                Text("🖼️", fontSize = 40.sp)
                                 Text("No image selected", color = Color(0xFF64748B), fontSize = 12.sp)
                             }
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    TextButton(onClick = { /* Implement image picker */ }) {
+                    TextButton(onClick = { showImagePicker = true }) {
                         Text("Select Image", color = Color(0xFF1E3A8A))
                     }
                 }

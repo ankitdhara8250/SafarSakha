@@ -2,6 +2,7 @@ package com.safarsakha.data.remote.firebase
 
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
+import dev.gitlive.firebase.storage.Data
 import dev.gitlive.firebase.storage.storage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -100,9 +101,8 @@ class FirebaseTourPackageDataSource {
     suspend fun uploadImage(imageBytes: ByteArray, fileName: String): String {
         return try {
             val storageRef = storage.reference.child("$storagePath/$fileName")
-            // For now, return dummy URL since image upload has issues
-            // You can implement actual upload later
-            "https://firebasestorage.googleapis.com/v0/b/your-bucket.appspot.com/o/$fileName"
+            storageRef.putData(Data(imageBytes))
+            storageRef.getDownloadUrl()
         } catch (e: Exception) {
             throw Exception("Failed to upload image: ${e.message}")
         }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.safarsakha.domain.model.TourPackage
 import com.safarsakha.core.utils.Resource
+import com.safarsakha.domain.repository.TourPackageRepository
 import com.safarsakha.domain.usecase.tourpackage.CreateTourPackageUseCase
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +14,8 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 class CreateTourPackageViewModel(
-    private val createTourPackageUseCase: CreateTourPackageUseCase
+    private val createTourPackageUseCase: CreateTourPackageUseCase,
+    private val tourPackageRepository: TourPackageRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateTourPackageUiState())
@@ -30,9 +32,9 @@ class CreateTourPackageViewModel(
             is CreateTourPackageEvent.DurationChanged -> updateDuration(event.duration)
             is CreateTourPackageEvent.PriceChanged -> updatePrice(event.price)
             is CreateTourPackageEvent.IncludedServicesChanged -> updateIncludedServices(event.services)
+            is CreateTourPackageEvent.ImageSelected -> updateSelectedImage(event.imageBytes, event.fileName)
             is CreateTourPackageEvent.SavePackage -> savePackage()
             is CreateTourPackageEvent.ResetSuccess -> resetSuccess()
-            else -> {}
         }
     }
 
@@ -60,6 +62,14 @@ class CreateTourPackageViewModel(
         _uiState.value = _uiState.value.copy(includedServices = services, errors = _uiState.value.errors - "includedServices")
     }
 
+    private fun updateSelectedImage(imageBytes: ByteArray, fileName: String) {
+        _uiState.value = _uiState.value.copy(
+            selectedImageBytes = imageBytes,
+            imageUrl = fileName, // We use this as a temporary holder for the filename or local path
+            errors = _uiState.value.errors - "image"
+        )
+    }
+
     private fun resetSuccess() {
         _uiState.value = CreateTourPackageUiState()
     }
@@ -68,6 +78,28 @@ class CreateTourPackageViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
 
+            var uploadedImageUrl: String? = null
+
+            // 1. Upload image if selected
+            _uiState.value.selectedImageBytes?.let { bytes ->
+                val fileName = "tour_${Clock.System.now().toEpochMilliseconds()}.jpg"
+                val uploadResult = tourPackageRepository.uploadPackageImage(bytes, fileName)
+                when (uploadResult) {
+                    is Resource.Success -> {
+                        uploadedImageUrl = uploadResult.data
+                    }
+                    is Resource.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errors = mapOf("form" to (uploadResult.message ?: "Failed to upload image"))
+                        )
+                        return@launch
+                    }
+                    else -> {}
+                }
+            }
+
+            // 2. Prepare package data
             val servicesList = _uiState.value.includedServices
                 .split(",")
                 .map { it.trim() }
@@ -82,22 +114,22 @@ class CreateTourPackageViewModel(
                 location = _uiState.value.location,
                 duration = _uiState.value.duration,
                 price = priceValue,
-                imageUrl = null,
+                imageUrl = uploadedImageUrl,
                 includedServices = servicesList,
                 createdAt = Clock.System.now(),
                 updatedAt = Clock.System.now(),
                 isActive = true
             )
 
+            // 3. Save package
             val result = createTourPackageUseCase.invoke(tourPackage)
             when (result) {
                 is Resource.Success<*> -> {
-                    // Reset the form data completely on success
                     _uiState.value = CreateTourPackageUiState()
                     _navigationEvent.emit(Unit)
                 }
                 is Resource.Error -> {
-                    val errorMessage = (result as Resource.Error).message
+                    val errorMessage = result.message
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         errors = mapOf("form" to (errorMessage ?: "Failed to save package"))

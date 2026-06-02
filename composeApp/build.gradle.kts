@@ -48,20 +48,24 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             // Navigation3 for CMP
             implementation("org.jetbrains.androidx.navigation3:navigation3-ui:1.0.0-alpha05")
-            
+
             // ViewModel
             implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
-            
+
             // Firebase GitLive
             implementation("dev.gitlive:firebase-common:2.1.0")
             implementation("dev.gitlive:firebase-firestore:2.1.0")
             implementation("dev.gitlive:firebase-storage:2.1.0")
-            
+
             // Coroutines
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
-            
+
             // Datetime
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+
+            // Coil 3
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
         }
 
         commonTest.dependencies {
@@ -71,7 +75,10 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.lifecycle.runtime.ktx)
-            
+
+            // Ktor HTTP client for Android (OkHttp)
+            implementation(libs.ktor.client.okhttp)
+
             // Firebase Android SDKs
             implementation(project.dependencies.platform(libs.firebase.bom))
             implementation(libs.firebase.auth)
@@ -82,6 +89,14 @@ kotlin {
 
         jvmMain.dependencies {
             implementation("org.jetbrains.compose.desktop:desktop-jvm-windows-x64:1.8.2")
+            
+            // Ktor HTTP client for JVM (Java)
+            implementation(libs.ktor.client.java)
+        }
+
+        iosMain.dependencies {
+            // Ktor HTTP client for iOS (Darwin)
+            implementation(libs.ktor.client.darwin)
         }
     }
 }

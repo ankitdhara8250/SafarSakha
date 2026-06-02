@@ -8,6 +8,7 @@ sealed class EditTourPackageEvent {
     data class DurationChanged(val duration: String) : EditTourPackageEvent()
     data class PriceChanged(val price: String) : EditTourPackageEvent()
     data class IncludedServicesChanged(val services: String) : EditTourPackageEvent()
+    data class ImageSelected(val imageBytes: ByteArray, val fileName: String) : EditTourPackageEvent()
     object UpdatePackage : EditTourPackageEvent()
     object ResetSuccess : EditTourPackageEvent()
 }

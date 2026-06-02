@@ -15,6 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
 import com.safarsakha.domain.model.TourPackage
 
 @Composable
@@ -58,22 +60,49 @@ fun TourPackageCard(
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column {
-            // Image Placeholder (as image loading might need additional library setup)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
+                    .height(180.dp)
                     .background(Color(0xFFE2E8F0)),
                 contentAlignment = Alignment.Center
             ) {
-                if (tourPackage.imageUrl != null) {
-                    // In a real app, use an image loading library like Coil-Compose-Multiplatform
-                    Text("🖼️ Image Loaded", color = Color(0xFF64748B))
+                if (!tourPackage.imageUrl.isNullOrEmpty()) {
+                    var isLoading by remember { mutableStateOf(true) }
+                    var isError by remember { mutableStateOf(false) }
+                    
+                    AsyncImage(
+                        model = tourPackage.imageUrl,
+                        contentDescription = tourPackage.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        onState = { state ->
+                            isLoading = state is AsyncImagePainter.State.Loading
+                            isError = state is AsyncImagePainter.State.Error
+                        }
+                    )
+                    
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(32.dp),
+                            color = Color(0xFF1E3A8A),
+                            strokeWidth = 2.dp
+                        )
+                    }
+                    
+                    if (isError) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("⚠️", fontSize = 24.sp)
+                            Text("Load Failed", color = Color.Red, fontSize = 10.sp)
+                        }
+                    }
                 } else {
-                    Text("📷 No Image", color = Color(0xFF94A3B8))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("📷", fontSize = 32.sp)
+                        Text("No Image", color = Color(0xFF94A3B8), fontSize = 12.sp)
+                    }
                 }
                 
-                // Overlay price
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -124,40 +153,16 @@ fun TourPackageCard(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = tourPackage.description.take(100) + if (tourPackage.description.length > 100) "..." else "",
+                    text = tourPackage.description,
                     fontSize = 13.sp,
                     color = Color(0xFF475569),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Included services preview
-                if (tourPackage.includedServices.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        tourPackage.includedServices.take(2).forEach { service ->
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFFF1F5F9)
-                            ) {
-                                Text(
-                                    text = "✅ $service",
-                                    fontSize = 11.sp,
-                                    color = Color(0xFF1E3A8A),
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Divider(color = Color(0xFFF1F5F9))
+                HorizontalDivider(color = Color(0xFFF1F5F9))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
