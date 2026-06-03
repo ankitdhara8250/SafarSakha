@@ -26,10 +26,11 @@ import com.safarsakha.data.repository.impl.TourPackageRepositoryImpl
 import com.safarsakha.domain.usecase.tourpackage.GetTourPackageByIdUseCase
 import com.safarsakha.domain.usecase.tourpackage.UpdateTourPackageUseCase
 import com.safarsakha.presentation.screens.admin.tourpackage.components.AdminTextField
+import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.core.PickerType
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import kotlin.reflect.KClass
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTourPackageScreen(
@@ -51,11 +52,40 @@ fun EditTourPackageScreen(
             }
         }
     )
-
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    var showImagePicker by remember { mutableStateOf(false) }
+    
+    // Image Picker Launcher
+    val filePickerLauncher = rememberFilePickerLauncher(
+        type = PickerType.Image,
+        onResult = { platformFile ->
+            if (platformFile != null) {
+                scope.launch {
+                    try {
+                        val fileName = platformFile.name
+                        val imageExtensions = listOf("jpg", "jpeg", "png", "gif", "webp")
+                        val extension = fileName.substringAfterLast(".").lowercase()
+                        
+                        if (extension in imageExtensions) {
+                            val imageBytes = platformFile.readBytes()
+                            viewModel.handleEvent(
+                                EditTourPackageEvent.ImageSelected(
+                                    imageBytes = imageBytes,
+                                    fileName = fileName
+                                )
+                            )
+                            snackbarHostState.showSnackbar("Image selected successfully")
+                        } else {
+                            snackbarHostState.showSnackbar("Please select a valid image file")
+                        }
+                    } catch (e: Exception) {
+                        snackbarHostState.showSnackbar("Error loading image: ${e.message}")
+                    }
+                }
+            }
+        }
+    )
 
     LaunchedEffect(packageId) {
         viewModel.handleEvent(EditTourPackageEvent.LoadPackage(packageId))
@@ -76,14 +106,6 @@ fun EditTourPackageScreen(
         }
     }
 
-    // Image Picker (simplified - you can implement actual picker)
-    fun pickImage() {
-        // Implement your image picker logic here
-        // For now, just show a message
-        scope.launch {
-            snackbarHostState.showSnackbar("Image picker coming soon")
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -243,12 +265,15 @@ fun EditTourPackageScreen(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            TextButton(onClick = {
-                                // Implement image picker
-                                scope.launch {
-                                    snackbarHostState.showSnackbar("Image picker will be implemented")
-                                }
-                            }) {
+                            TextButton(
+                                onClick = {
+                                    // Launch the actual image picker
+                                    filePickerLauncher.launch()
+                                },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = Color(0xFF1E3A8A)
+                                )
+                            ) {
                                 Text("Change Image", color = Color(0xFF1E3A8A))
                             }
                         }

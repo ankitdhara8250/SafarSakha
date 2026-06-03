@@ -28,9 +28,9 @@ fun EmptyTourPackageState(
             text = "🌍",
             fontSize = 80.sp
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
-        
+
         Text(
             text = "No Tour Packages Yet",
             fontSize = 20.sp,
@@ -38,18 +38,18 @@ fun EmptyTourPackageState(
             color = Color(0xFF1E3A8A),
             textAlign = TextAlign.Center
         )
-        
+
         Spacer(modifier = Modifier.height(12.dp))
-        
+
         Text(
             text = "Create your first tour package to start listing tours",
             fontSize = 14.sp,
             color = Color(0xFF64748B),
             textAlign = TextAlign.Center
         )
-        
+
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         Button(
             onClick = onCreateClick,
             modifier = Modifier.fillMaxWidth().height(52.dp),

@@ -57,6 +57,10 @@ kotlin {
             implementation("dev.gitlive:firebase-firestore:2.1.0")
             implementation("dev.gitlive:firebase-storage:2.1.0")
 
+            // FileKit Image Picker
+            implementation(libs.filekit.core)
+            implementation(libs.filekit.compose)
+
             // Coroutines
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
 

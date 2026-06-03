@@ -19,6 +19,7 @@ firebaseStorage = "21.0.1"
 firebaseCommon = "21.0.0"
 coil3 = "3.0.4"
 ktor = "3.5.0"
+fileKitCore = "0.8.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -60,6 +61,10 @@ coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.re
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
 ktor-client-java = { module = "io.ktor:ktor-client-java", version.ref = "ktor" }
+
+# FileKit Image Picker
+filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "fileKitCore" }
+filekit-compose = { module = "io.github.vinceglb:filekit-compose", version.ref = "fileKitCore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
