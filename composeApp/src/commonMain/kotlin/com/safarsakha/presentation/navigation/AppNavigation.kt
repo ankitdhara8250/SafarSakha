@@ -15,12 +15,18 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.safarsakha.domain.repository.AuthRepository
+import com.safarsakha.domain.usecase.auth.LoginUserUseCase
+import com.safarsakha.domain.usecase.auth.RegisterUserUseCase
 import com.safarsakha.presentation.screens.admin.dashboard.AdminDashboardScreen
 import com.safarsakha.presentation.screens.admin.login.AdminLoginScreen
 import com.safarsakha.presentation.screens.admin.login.AdminLoginViewModel
 import com.safarsakha.presentation.screens.admin.tourpackage.AdminTourPackageListScreen
 import com.safarsakha.presentation.screens.admin.tourpackage.CreateTourPackageScreen
 import com.safarsakha.presentation.screens.admin.tourpackage.EditTourPackageScreen
+import com.safarsakha.presentation.screens.profile.registration.UserRegisterScreen
+import com.safarsakha.presentation.screens.profile.registration.UserRegisterViewModel
+import com.safarsakha.presentation.screens.user.profile.UserProfileScreen
+import com.safarsakha.presentation.screens.user.profile.UserProfileViewModel
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.PolymorphicModuleBuilder
 
@@ -28,7 +34,7 @@ expect fun provideAuthRepository(): AuthRepository
 
 @Serializable
 sealed interface AppNavKey : NavKey {
-
+//   Admin navigations
     @Serializable
     data object AdminLogin : AppNavKey
 
@@ -44,6 +50,14 @@ sealed interface AppNavKey : NavKey {
     @Serializable
     data class EditTourPackage(val packageId: String) : AppNavKey
 
+    // user profile
+    @Serializable
+    data object UserProfile : AppNavKey
+    //user Registration
+    @Serializable
+    data object UserRegister : AppNavKey
+
+
     companion object {
         fun register(builder: PolymorphicModuleBuilder<NavKey>) {
             builder.subclass(AdminLogin::class, AdminLogin.serializer())
@@ -51,6 +65,10 @@ sealed interface AppNavKey : NavKey {
             builder.subclass(AdminTourPackageList::class, AdminTourPackageList.serializer())
             builder.subclass(CreateTourPackage::class, CreateTourPackage.serializer())
             builder.subclass(EditTourPackage::class, EditTourPackage.serializer())
+            //user profile
+            builder.subclass(UserProfile::class, UserProfile.serializer())
+            //user registration
+            builder.subclass(UserRegister::class, UserRegister.serializer())
         }
     }
 }
@@ -131,6 +149,47 @@ fun AppNavigation(
                         EditTourPackageScreen(
                             packageId = route.packageId,
                             onNavigateBack = {
+                                backStack.removeLast()
+                            }
+                        )
+                    }
+                }
+//                user profile route
+                AppNavKey.UserProfile -> {
+                    NavEntry(key = route) {
+                        val authRepository = provideAuthRepository()
+                        val loginUserUseCase = remember { LoginUserUseCase(authRepository) }
+                        val viewModel = remember { UserProfileViewModel(loginUserUseCase) }
+
+                        UserProfileScreen(
+                            viewModel = viewModel,
+                            onRegisterClick = {
+                                backStack.add(AppNavKey.UserRegister)
+                            },
+                            onAdminLoginClick = {
+                                backStack.add(AppNavKey.AdminLogin)
+                            },
+                            onLoginSuccess = {
+                                // Navigate to User Home or Dashboard
+                                println("Login Success - Navigate to User Home")
+                                backStack.removeLast()
+                            }
+                        )
+                    }
+                }
+                AppNavKey.UserRegister -> {
+                    NavEntry(key = route) {
+                        val authRepository = provideAuthRepository()
+                        val registerUserUseCase = remember { RegisterUserUseCase(authRepository) }
+                        val viewModel = remember { UserRegisterViewModel(registerUserUseCase) }
+
+                        UserRegisterScreen(
+                            viewModel = viewModel,
+                            onBackToLogin = {
+                                backStack.removeLast()
+                            },
+                            onRegistrationSuccess = {
+                                // Go back to login screen after successful registration
                                 backStack.removeLast()
                             }
                         )

@@ -1,27 +1,104 @@
 package com.safarsakha.data.repository
 
-import com.google.firebase.auth.FirebaseAuth
+import com.safarsakha.core.utils.Resource
+import com.safarsakha.data.remote.firebase.auth.FirebaseAuthDataSource
+import com.safarsakha.domain.model.User
+import com.safarsakha.domain.model.UserRole
 import com.safarsakha.domain.repository.AuthRepository
-//import com.safarsakha.presentation.navigation.provideAuthRepository
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
+
 class FirebaseAuthRepositoryImpl(
-    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val authDataSource: FirebaseAuthDataSource = FirebaseAuthDataSource()  // Default parameter added
 ) : AuthRepository {
-    override suspend fun loginAdmin(
+
+    override suspend fun loginUser(email: String, password: String): Resource<User> =
+        withContext(Dispatchers.IO) {
+            try {
+                val result = authDataSource.loginUser(email, password)
+                if (result.isSuccess) {
+                    val firebaseUser = result.getOrThrow()
+                    val userResult = authDataSource.getUserFromFirestore(firebaseUser.uid)
+
+                    if (userResult.isSuccess) {
+                        Resource.Success(userResult.getOrThrow())
+                    } else {
+                        Resource.Error("Failed to fetch user data")
+                    }
+                } else {
+                    Resource.Error(result.exceptionOrNull()?.message ?: "Login failed")
+                }
+            } catch (e: Exception) {
+                Resource.Error(e.message ?: "An error occurred during login")
+            }
+        }
+
+    override suspend fun registerUser(
+        name: String,
         email: String,
+        phoneNumber: String,
         password: String
-    ): Result<Unit> {
+    ): Resource<User> = withContext(Dispatchers.IO) {
+        try {
+            val result = authDataSource.registerUser(email, password, name, phoneNumber)
+            if (result.isSuccess) {
+                val firebaseUser = result.getOrThrow()
+                val userResult = authDataSource.getUserFromFirestore(firebaseUser.uid)
+
+                if (userResult.isSuccess) {
+                    Resource.Success(userResult.getOrThrow())
+                } else {
+                    Resource.Error("Failed to fetch user data after registration")
+                }
+            } else {
+                Resource.Error(result.exceptionOrNull()?.message ?: "Registration failed")
+            }
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "An error occurred during registration")
+        }
+    }
+
+    override suspend fun logout(): Resource<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val result = authDataSource.logout()
+            if (result.isSuccess) {
+                Resource.Success(Unit)
+            } else {
+                Resource.Error(result.exceptionOrNull()?.message ?: "Logout failed")
+            }
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "An error occurred during logout")
+        }
+    }
+
+    override fun getCurrentUser(): User? {
+        val firebaseUser = authDataSource.getCurrentFirebaseUser() ?: return null
+        return User(
+            uid = firebaseUser.uid,
+            name = "",
+            email = firebaseUser.email ?: "",
+            phoneNumber = "",
+            role = UserRole.USER,
+            createdAt = Clock.System.now(),
+            updatedAt = null
+        )
+    }
+
+    override suspend fun isUserLoggedIn(): Boolean = withContext(Dispatchers.IO) {
+        authDataSource.getCurrentFirebaseUser() != null
+    }
+
+    override suspend fun loginAdmin(email: String, password: String): Result<Unit> {
         return try {
-            firebaseAuth
-                .signInWithEmailAndPassword(email, password)
-                .await()
-            Result.success(Unit)
+            val result = authDataSource.loginUser(email, password)
+            if (result.isSuccess) {
+                Result.success(Unit)
+            } else {
+                Result.failure(result.exceptionOrNull() ?: Exception("Login failed"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 }
-
-//actual fun provideAuthRepository(): AuthRepository {
-//    return FirebaseAuthRepositoryImpl()
-//}

@@ -2,13 +2,11 @@ package com.safarsakha.data.remote.firebase
 
 import dev.gitlive.firebase.Firebase
 import dev.gitlive.firebase.firestore.firestore
-import dev.gitlive.firebase.storage.Data
 import dev.gitlive.firebase.storage.storage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
-
 @Serializable
 data class TourPackageDTO(
     val id: String = "",
@@ -23,9 +21,7 @@ data class TourPackageDTO(
     val updatedAt: String = Clock.System.now().toString(),
     val isActive: Boolean = true
 )
-
 class FirebaseTourPackageDataSource {
-
     private val firestore = Firebase.firestore
     private val storage = Firebase.storage
     private val collectionName = "tour_packages"
@@ -99,12 +95,13 @@ class FirebaseTourPackageDataSource {
     }
 
     suspend fun uploadImage(imageBytes: ByteArray, fileName: String): String {
-        return try {
-            val storageRef = storage.reference.child("$storagePath/$fileName")
-            storageRef.putData(Data(imageBytes))
-            storageRef.getDownloadUrl()
-        } catch (e: Exception) {
-            throw Exception("Failed to upload image: ${e.message}")
-        }
+        return platformSpecificUploadImage(storage, storagePath, imageBytes, fileName)
     }
 }
+
+expect suspend fun platformSpecificUploadImage(
+    storage: Any,
+    storagePath: String,
+    imageBytes: ByteArray,
+    fileName: String
+): String

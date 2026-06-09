@@ -54,6 +54,7 @@ kotlin {
 
             // Firebase GitLive
             implementation("dev.gitlive:firebase-common:2.1.0")
+            implementation("dev.gitlive:firebase-auth:2.1.0")
             implementation("dev.gitlive:firebase-firestore:2.1.0")
             implementation("dev.gitlive:firebase-storage:2.1.0")
 

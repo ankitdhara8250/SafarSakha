@@ -37,7 +37,7 @@ fun SafarSakhaApp() {
         val backStack: NavBackStack<NavKey> =
             rememberNavBackStack(
                 savedStateConfig,
-                AppNavKey.AdminDashboard
+                AppNavKey.UserProfile  //put here the nav route
             )
 
         AppNavigation(backStack = backStack)
