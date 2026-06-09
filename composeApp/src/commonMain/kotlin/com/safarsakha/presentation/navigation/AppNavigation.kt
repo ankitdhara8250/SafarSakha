@@ -26,7 +26,7 @@ import com.safarsakha.presentation.screens.admin.tourpackage.EditTourPackageScre
 import com.safarsakha.presentation.screens.profile.registration.UserRegisterScreen
 import com.safarsakha.presentation.screens.profile.registration.UserRegisterViewModel
 import com.safarsakha.presentation.screens.user.profile.UserProfileScreen
-import com.safarsakha.presentation.screens.user.profile.UserProfileViewModel
+import com.safarsakha.presentation.screens.profile.userlogin.UserProfileViewModel
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.PolymorphicModuleBuilder
 

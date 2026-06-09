@@ -1,4 +1,4 @@
-package com.safarsakha.presentation.screens.user.profile
+package com.safarsakha.presentation.screens.profile.userlogin
 
 import com.safarsakha.core.utils.Resource
 import com.safarsakha.domain.usecase.auth.LoginUserUseCase

@@ -1,4 +1,4 @@
-package com.safarsakha.presentation.screens.user.profile
+package com.safarsakha.presentation.screens.profile.userlogin
 
 data class UserProfileUiState(
     val email: String = "",

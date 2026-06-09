@@ -1,4 +1,4 @@
-package com.safarsakha.presentation.screens.user.profile
+package com.safarsakha.presentation.screens.profile.userlogin
 
 sealed class UserProfileEvent {
     data class OnEmailChanged(val email: String) : UserProfileEvent()
