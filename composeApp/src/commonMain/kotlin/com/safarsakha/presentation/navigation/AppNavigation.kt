@@ -27,6 +27,8 @@ import com.safarsakha.presentation.screens.profile.registration.UserRegisterScre
 import com.safarsakha.presentation.screens.profile.registration.UserRegisterViewModel
 import com.safarsakha.presentation.screens.user.profile.UserProfileScreen
 import com.safarsakha.presentation.screens.profile.userlogin.UserProfileViewModel
+import com.safarsakha.presentation.screens.tours.TourDetailScreen
+import com.safarsakha.presentation.screens.tours.UserTourListScreen
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.PolymorphicModuleBuilder
 
@@ -34,7 +36,7 @@ expect fun provideAuthRepository(): AuthRepository
 
 @Serializable
 sealed interface AppNavKey : NavKey {
-//   Admin navigations
+    //   Admin navigations
     @Serializable
     data object AdminLogin : AppNavKey
 
@@ -57,6 +59,13 @@ sealed interface AppNavKey : NavKey {
     @Serializable
     data object UserRegister : AppNavKey
 
+    // user tours (shows Admin-created tour packages to logged-in users)
+    @Serializable
+    data object UserTourList : AppNavKey
+
+    @Serializable
+    data class UserTourDetail(val packageId: String) : AppNavKey
+
 
     companion object {
         fun register(builder: PolymorphicModuleBuilder<NavKey>) {
@@ -69,6 +78,9 @@ sealed interface AppNavKey : NavKey {
             builder.subclass(UserProfile::class, UserProfile.serializer())
             //user registration
             builder.subclass(UserRegister::class, UserRegister.serializer())
+            // user tours
+            builder.subclass(UserTourList::class, UserTourList.serializer())
+            builder.subclass(UserTourDetail::class, UserTourDetail.serializer())
         }
     }
 }
@@ -170,9 +182,8 @@ fun AppNavigation(
                                 backStack.add(AppNavKey.AdminLogin)
                             },
                             onLoginSuccess = {
-                                // Navigate to User Home or Dashboard
-                                println("Login Success - Navigate to User Home")
-                                backStack.removeLast()
+                                // Navigate to the User Tours screen after a successful login
+                                backStack.navigateToUserTourList()
                             }
                         )
                     }
@@ -190,6 +201,28 @@ fun AppNavigation(
                             },
                             onRegistrationSuccess = {
                                 // Go back to login screen after successful registration
+                                backStack.removeLast()
+                            }
+                        )
+                    }
+                }
+
+//                user tours routes
+                AppNavKey.UserTourList -> {
+                    NavEntry(key = route) {
+                        UserTourListScreen(
+                            onTourClick = { packageId ->
+                                backStack.add(AppNavKey.UserTourDetail(packageId))
+                            }
+                        )
+                    }
+                }
+
+                is AppNavKey.UserTourDetail -> {
+                    NavEntry(key = route) {
+                        TourDetailScreen(
+                            packageId = route.packageId,
+                            onNavigateBack = {
                                 backStack.removeLast()
                             }
                         )
@@ -235,6 +268,11 @@ fun AppNavigation(
 fun NavBackStack<NavKey>.navigateToAdminDashboard() {
     clear()
     add(AppNavKey.AdminDashboard)
+}
+
+fun NavBackStack<NavKey>.navigateToUserTourList() {
+    clear()
+    add(AppNavKey.UserTourList)
 }
 
 val smoothSpec = tween<IntOffset>(
