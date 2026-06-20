@@ -20,6 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.safarsakha.data.remote.firebase.FirebaseTourPackageDataSource
 import com.safarsakha.data.repository.impl.TourPackageRepositoryImpl
 import com.safarsakha.domain.usecase.tourpackage.GetActiveTourPackagesUseCase
+import com.safarsakha.presentation.screens.profile.profiledashboard.components.HamburgerMenuButton
 import com.safarsakha.presentation.screens.profile.tours.components.EmptyToursState
 import com.safarsakha.presentation.screens.profile.tours.components.UserTourCard
 import kotlin.reflect.KClass
@@ -27,9 +28,9 @@ import kotlin.reflect.KClass
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserTourListScreen(
-    onTourClick: (String) -> Unit
+    onTourClick: (String) -> Unit,
+    onMenuClick: () -> Unit = {}          // ← added
 ) {
-    // Reusing the existing repository + data source exactly like the Admin module does
     val repository = remember {
         TourPackageRepositoryImpl(FirebaseTourPackageDataSource())
     }
@@ -57,6 +58,7 @@ fun UserTourListScreen(
                         color = Color(0xFF1E3A8A)
                     )
                 },
+                navigationIcon = { HamburgerMenuButton(onClick = onMenuClick) },  // ← added
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White
                 )

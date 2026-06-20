@@ -23,11 +23,17 @@ import com.safarsakha.presentation.screens.admin.login.AdminLoginViewModel
 import com.safarsakha.presentation.screens.admin.tourpackage.AdminTourPackageListScreen
 import com.safarsakha.presentation.screens.admin.tourpackage.CreateTourPackageScreen
 import com.safarsakha.presentation.screens.admin.tourpackage.EditTourPackageScreen
+import com.safarsakha.presentation.screens.profile.feedback.FeedbackScreen
+import com.safarsakha.presentation.screens.profile.mybooking.MyBookingScreen
+import com.safarsakha.presentation.screens.profile.myprofile.UserProfileScreen as MyProfileScreen
+import com.safarsakha.presentation.screens.profile.profiledashboard.ProfileDashboardScreen
+import com.safarsakha.presentation.screens.profile.profiledashboard.ProfileDrawerItem
 import com.safarsakha.presentation.screens.profile.registration.UserRegisterScreen
 import com.safarsakha.presentation.screens.profile.registration.UserRegisterViewModel
-import com.safarsakha.presentation.screens.profile.userlogin.UserProfileViewModel
 import com.safarsakha.presentation.screens.profile.tours.TourDetailScreen
 import com.safarsakha.presentation.screens.profile.tours.UserTourListScreen
+import com.safarsakha.presentation.screens.profile.transaction.TransactionScreen
+import com.safarsakha.presentation.screens.profile.userlogin.UserProfileViewModel
 import com.safarsakha.presentation.screens.user.profile.UserProfileScreen
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.PolymorphicModuleBuilder
@@ -36,7 +42,8 @@ expect fun provideAuthRepository(): AuthRepository
 
 @Serializable
 sealed interface AppNavKey : NavKey {
-    //   Admin navigations
+
+    // Admin navigations
     @Serializable
     data object AdminLogin : AppNavKey
 
@@ -52,20 +59,33 @@ sealed interface AppNavKey : NavKey {
     @Serializable
     data class EditTourPackage(val packageId: String) : AppNavKey
 
-    // user profile
+    // User profile (login screen)
     @Serializable
     data object UserProfile : AppNavKey
-    //user Registration
+
+    // User registration
     @Serializable
     data object UserRegister : AppNavKey
 
-    // user tours (shows Admin-created tour packages to logged-in users)
+    // User tours
     @Serializable
     data object UserTourList : AppNavKey
 
     @Serializable
     data class UserTourDetail(val packageId: String) : AppNavKey
 
+    // Profile drawer destinations
+    @Serializable
+    data object ProfileMyProfile : AppNavKey
+
+    @Serializable
+    data object ProfileMyBooking : AppNavKey
+
+    @Serializable
+    data object ProfileTransaction : AppNavKey
+
+    @Serializable
+    data object ProfileFeedback : AppNavKey
 
     companion object {
         fun register(builder: PolymorphicModuleBuilder<NavKey>) {
@@ -74,13 +94,15 @@ sealed interface AppNavKey : NavKey {
             builder.subclass(AdminTourPackageList::class, AdminTourPackageList.serializer())
             builder.subclass(CreateTourPackage::class, CreateTourPackage.serializer())
             builder.subclass(EditTourPackage::class, EditTourPackage.serializer())
-            //user profile
             builder.subclass(UserProfile::class, UserProfile.serializer())
-            //user registration
             builder.subclass(UserRegister::class, UserRegister.serializer())
-            // user tours
             builder.subclass(UserTourList::class, UserTourList.serializer())
             builder.subclass(UserTourDetail::class, UserTourDetail.serializer())
+            // Profile drawer destinations
+            builder.subclass(ProfileMyProfile::class, ProfileMyProfile.serializer())
+            builder.subclass(ProfileMyBooking::class, ProfileMyBooking.serializer())
+            builder.subclass(ProfileTransaction::class, ProfileTransaction.serializer())
+            builder.subclass(ProfileFeedback::class, ProfileFeedback.serializer())
         }
     }
 }
@@ -90,7 +112,6 @@ fun AppNavigation(
     modifier: Modifier = Modifier,
     backStack: NavBackStack<NavKey>
 ) {
-
     NavDisplay(
         modifier = modifier,
         backStack = backStack,
@@ -98,21 +119,16 @@ fun AppNavigation(
             rememberSaveableStateHolderNavEntryDecorator()
         ),
         entryProvider = { key ->
-
             when (val route = key as? AppNavKey) {
 
                 AppNavKey.AdminLogin -> {
                     NavEntry(key = route) {
                         val viewModel = remember {
-                            AdminLoginViewModel(
-                                authRepository = provideAuthRepository()
-                            )
+                            AdminLoginViewModel(authRepository = provideAuthRepository())
                         }
                         AdminLoginScreen(
                             viewModel = viewModel,
-                            onLoginSuccess = {
-                                backStack.navigateToAdminDashboard()
-                            }
+                            onLoginSuccess = { backStack.navigateToAdminDashboard() }
                         )
                     }
                 }
@@ -120,15 +136,9 @@ fun AppNavigation(
                 AppNavKey.AdminDashboard -> {
                     NavEntry(key = route) {
                         AdminDashboardScreen(
-                            onTourPackageClick = {
-                                backStack.add(AppNavKey.AdminTourPackageList)
-                            },
-                            onBookingClick = {
-                                // TODO: navigate to Booking Management Screen
-                            },
-                            onFeedbackEnquiryClick = {
-                                // TODO: navigate to Feedback / Enquiry Management Screen
-                            }
+                            onTourPackageClick = { backStack.add(AppNavKey.AdminTourPackageList) },
+                            onBookingClick = { },
+                            onFeedbackEnquiryClick = { }
                         )
                     }
                 }
@@ -136,83 +146,67 @@ fun AppNavigation(
                 AppNavKey.AdminTourPackageList -> {
                     NavEntry(key = route) {
                         AdminTourPackageListScreen(
-                            onNavigateToCreate = {
-                                backStack.add(AppNavKey.CreateTourPackage)
-                            },
-                            onNavigateToEdit = { id ->
-                                backStack.add(AppNavKey.EditTourPackage(id))
-                            }
+                            onNavigateToCreate = { backStack.add(AppNavKey.CreateTourPackage) },
+                            onNavigateToEdit = { id -> backStack.add(AppNavKey.EditTourPackage(id)) }
                         )
                     }
                 }
+
                 AppNavKey.CreateTourPackage -> {
                     NavEntry(key = route) {
-                        CreateTourPackageScreen(
-                            onNavigateBack = {
-                                backStack.removeLast()
-                            }
-                        )
+                        CreateTourPackageScreen(onNavigateBack = { backStack.removeLast() })
                     }
                 }
+
                 is AppNavKey.EditTourPackage -> {
                     NavEntry(key = route) {
                         EditTourPackageScreen(
                             packageId = route.packageId,
-                            onNavigateBack = {
-                                backStack.removeLast()
-                            }
+                            onNavigateBack = { backStack.removeLast() }
                         )
                     }
                 }
-//                user profile route
+
                 AppNavKey.UserProfile -> {
                     NavEntry(key = route) {
                         val authRepository = provideAuthRepository()
                         val loginUserUseCase = remember { LoginUserUseCase(authRepository) }
                         val viewModel = remember { UserProfileViewModel(loginUserUseCase) }
-
                         UserProfileScreen(
                             viewModel = viewModel,
-                            onRegisterClick = {
-                                backStack.add(AppNavKey.UserRegister)
-                            },
-                            onAdminLoginClick = {
-                                backStack.add(AppNavKey.AdminLogin)
-                            },
-                            onLoginSuccess = {
-                                // Navigate to the User Tours screen after a successful login
-                                backStack.navigateToUserTourList()
-                            }
+                            onRegisterClick = { backStack.add(AppNavKey.UserRegister) },
+                            onAdminLoginClick = { backStack.add(AppNavKey.AdminLogin) },
+                            onLoginSuccess = { backStack.navigateToUserTourList() }
                         )
                     }
                 }
+
                 AppNavKey.UserRegister -> {
                     NavEntry(key = route) {
                         val authRepository = provideAuthRepository()
                         val registerUserUseCase = remember { RegisterUserUseCase(authRepository) }
                         val viewModel = remember { UserRegisterViewModel(registerUserUseCase) }
-
                         UserRegisterScreen(
                             viewModel = viewModel,
-                            onBackToLogin = {
-                                backStack.removeLast()
-                            },
-                            onRegistrationSuccess = {
-                                // Go back to login screen after successful registration
-                                backStack.removeLast()
-                            }
+                            onBackToLogin = { backStack.removeLast() },
+                            onRegistrationSuccess = { backStack.removeLast() }
                         )
                     }
                 }
 
-//                user tours routes
                 AppNavKey.UserTourList -> {
                     NavEntry(key = route) {
-                        UserTourListScreen(
-                            onTourClick = { packageId ->
-                                backStack.add(AppNavKey.UserTourDetail(packageId))
-                            }
-                        )
+                        ProfileDashboardScreen(
+                            selectedItem = ProfileDrawerItem.Tours,
+                            onItemSelected = { item -> backStack.navigateToProfileItem(item) }
+                        ) { openDrawer ->
+                            UserTourListScreen(
+                                onTourClick = { packageId ->
+                                    backStack.add(AppNavKey.UserTourDetail(packageId))
+                                },
+                                onMenuClick = openDrawer
+                            )
+                        }
                     }
                 }
 
@@ -220,10 +214,52 @@ fun AppNavigation(
                     NavEntry(key = route) {
                         TourDetailScreen(
                             packageId = route.packageId,
-                            onNavigateBack = {
-                                backStack.removeLast()
-                            }
+                            onNavigateBack = { backStack.removeLast() }
                         )
+                    }
+                }
+
+                AppNavKey.ProfileMyProfile -> {
+                    NavEntry(key = route) {
+                        ProfileDashboardScreen(
+                            selectedItem = ProfileDrawerItem.MyProfile,
+                            onItemSelected = { item -> backStack.navigateToProfileItem(item) }
+                        ) { openDrawer ->
+                            MyProfileScreen(onMenuClick = openDrawer)
+                        }
+                    }
+                }
+
+                AppNavKey.ProfileMyBooking -> {
+                    NavEntry(key = route) {
+                        ProfileDashboardScreen(
+                            selectedItem = ProfileDrawerItem.MyBooking,
+                            onItemSelected = { item -> backStack.navigateToProfileItem(item) }
+                        ) { openDrawer ->
+                            MyBookingScreen(onMenuClick = openDrawer)
+                        }
+                    }
+                }
+
+                AppNavKey.ProfileTransaction -> {
+                    NavEntry(key = route) {
+                        ProfileDashboardScreen(
+                            selectedItem = ProfileDrawerItem.Transaction,
+                            onItemSelected = { item -> backStack.navigateToProfileItem(item) }
+                        ) { openDrawer ->
+                            TransactionScreen(onMenuClick = openDrawer)
+                        }
+                    }
+                }
+
+                AppNavKey.ProfileFeedback -> {
+                    NavEntry(key = route) {
+                        ProfileDashboardScreen(
+                            selectedItem = ProfileDrawerItem.Feedback,
+                            onItemSelected = { item -> backStack.navigateToProfileItem(item) }
+                        ) { openDrawer ->
+                            FeedbackScreen(onMenuClick = openDrawer)
+                        }
                     }
                 }
 
@@ -234,31 +270,28 @@ fun AppNavigation(
             slideInHorizontally(
                 initialOffsetX = { it },
                 animationSpec = smoothSpec
-            ) togetherWith
-                    slideOutHorizontally(
-                        targetOffsetX = { -it },
-                        animationSpec = smoothSpec
-                    )
+            ) togetherWith slideOutHorizontally(
+                targetOffsetX = { -it },
+                animationSpec = smoothSpec
+            )
         },
         popTransitionSpec = {
             slideInHorizontally(
                 initialOffsetX = { -it },
                 animationSpec = smoothSpec
-            ) togetherWith
-                    slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec = smoothSpec
-                    )
+            ) togetherWith slideOutHorizontally(
+                targetOffsetX = { it },
+                animationSpec = smoothSpec
+            )
         },
         predictivePopTransitionSpec = {
             slideInHorizontally(
                 initialOffsetX = { -it },
                 animationSpec = smoothSpec
-            ) togetherWith
-                    slideOutHorizontally(
-                        targetOffsetX = { it },
-                        animationSpec = smoothSpec
-                    )
+            ) togetherWith slideOutHorizontally(
+                targetOffsetX = { it },
+                animationSpec = smoothSpec
+            )
         }
     )
 }
@@ -271,6 +304,19 @@ fun NavBackStack<NavKey>.navigateToAdminDashboard() {
 fun NavBackStack<NavKey>.navigateToUserTourList() {
     clear()
     add(AppNavKey.UserTourList)
+}
+
+fun NavBackStack<NavKey>.navigateToProfileItem(item: ProfileDrawerItem) {
+    clear()
+    add(
+        when (item) {
+            ProfileDrawerItem.MyProfile   -> AppNavKey.ProfileMyProfile
+            ProfileDrawerItem.Tours       -> AppNavKey.UserTourList
+            ProfileDrawerItem.MyBooking   -> AppNavKey.ProfileMyBooking
+            ProfileDrawerItem.Transaction -> AppNavKey.ProfileTransaction
+            ProfileDrawerItem.Feedback    -> AppNavKey.ProfileFeedback
+        }
+    )
 }
 
 val smoothSpec = tween<IntOffset>(
