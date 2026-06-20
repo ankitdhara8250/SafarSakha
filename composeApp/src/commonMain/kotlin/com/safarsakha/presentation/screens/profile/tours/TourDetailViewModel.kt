@@ -1,4 +1,4 @@
-package com.safarsakha.presentation.screens.tours
+package com.safarsakha.presentation.screens.profile.tours
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

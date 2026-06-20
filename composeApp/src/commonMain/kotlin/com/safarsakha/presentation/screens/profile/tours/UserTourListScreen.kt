@@ -1,4 +1,4 @@
-package com.safarsakha.presentation.screens.tours
+package com.safarsakha.presentation.screens.profile.tours
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -20,8 +20,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.safarsakha.data.remote.firebase.FirebaseTourPackageDataSource
 import com.safarsakha.data.repository.impl.TourPackageRepositoryImpl
 import com.safarsakha.domain.usecase.tourpackage.GetActiveTourPackagesUseCase
-import com.safarsakha.presentation.screens.tours.components.EmptyToursState
-import com.safarsakha.presentation.screens.tours.components.UserTourCard
+import com.safarsakha.presentation.screens.profile.tours.components.EmptyToursState
+import com.safarsakha.presentation.screens.profile.tours.components.UserTourCard
 import kotlin.reflect.KClass
 
 @OptIn(ExperimentalMaterial3Api::class)

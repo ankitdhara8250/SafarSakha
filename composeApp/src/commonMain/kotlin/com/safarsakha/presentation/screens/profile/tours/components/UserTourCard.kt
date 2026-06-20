@@ -1,4 +1,4 @@
-package com.safarsakha.presentation.screens.tours.components
+package com.safarsakha.presentation.screens.profile.tours.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

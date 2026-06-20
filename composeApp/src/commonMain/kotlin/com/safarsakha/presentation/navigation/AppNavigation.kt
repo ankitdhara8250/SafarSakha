@@ -25,10 +25,10 @@ import com.safarsakha.presentation.screens.admin.tourpackage.CreateTourPackageSc
 import com.safarsakha.presentation.screens.admin.tourpackage.EditTourPackageScreen
 import com.safarsakha.presentation.screens.profile.registration.UserRegisterScreen
 import com.safarsakha.presentation.screens.profile.registration.UserRegisterViewModel
-import com.safarsakha.presentation.screens.user.profile.UserProfileScreen
 import com.safarsakha.presentation.screens.profile.userlogin.UserProfileViewModel
-import com.safarsakha.presentation.screens.tours.TourDetailScreen
-import com.safarsakha.presentation.screens.tours.UserTourListScreen
+import com.safarsakha.presentation.screens.profile.tours.TourDetailScreen
+import com.safarsakha.presentation.screens.profile.tours.UserTourListScreen
+import com.safarsakha.presentation.screens.user.profile.UserProfileScreen
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.PolymorphicModuleBuilder
 
@@ -145,7 +145,6 @@ fun AppNavigation(
                         )
                     }
                 }
-
                 AppNavKey.CreateTourPackage -> {
                     NavEntry(key = route) {
                         CreateTourPackageScreen(
@@ -155,7 +154,6 @@ fun AppNavigation(
                         )
                     }
                 }
-
                 is AppNavKey.EditTourPackage -> {
                     NavEntry(key = route) {
                         EditTourPackageScreen(

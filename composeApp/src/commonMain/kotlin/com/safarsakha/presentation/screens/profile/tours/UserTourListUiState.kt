@@ -1,4 +1,4 @@
-package com.safarsakha.presentation.screens.tours
+package com.safarsakha.presentation.screens.profile.tours
 
 import com.safarsakha.domain.model.TourPackage
 

@@ -1,4 +1,4 @@
-package com.safarsakha.presentation.screens.tours
+package com.safarsakha.presentation.screens.profile.tours
 
 sealed class TourDetailEvent {
     data class LoadPackage(val id: String) : TourDetailEvent()
