@@ -113,7 +113,52 @@ fun TourDetailScreen(
                         Text("Back", color = Color(0xFF1E3A8A))
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                actions = {
+                    // Send Enquiry button in TopAppBar
+                    Button(
+                        onClick = {
+                            viewModel.handleEvent(TourDetailEvent.OpenEnquiryDialog)
+                        },
+                        enabled = !uiState.isSubmittingEnquiry,
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .height(36.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF1E3A8A),
+                            disabledContainerColor = Color(0xFF94A3B8)
+                        ),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 16.dp,
+                            vertical = 4.dp
+                        )
+                    ) {
+                        if (uiState.isSubmittingEnquiry) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(14.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Sending...",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White
+                            )
+                        } else {
+                            Text(
+                                text = "Send Enquiry",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White
+                )
             )
         }
     ) { paddingValues ->
@@ -205,7 +250,10 @@ fun TourDetailScreen(
                                     modifier = Modifier.weight(1f)
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFF1E3A8A)) {
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = Color(0xFF1E3A8A)
+                                ) {
                                     Text(
                                         text = "₹${tourPackage.price}",
                                         color = Color.White,
@@ -263,20 +311,19 @@ fun TourDetailScreen(
                             HorizontalDivider(color = Color(0xFFE2E8F0))
                             Spacer(modifier = Modifier.height(20.dp))
 
-                            // ── SEND ENQUIRY BUTTON ──
+                            // Book Now Button
                             Button(
-                                onClick = { viewModel.handleEvent(TourDetailEvent.OpenEnquiryDialog) },
+                                onClick = {
+                                    // TODO: Integrate booking flow
+                                },
                                 modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A)),
-                                shape = RoundedCornerShape(12.dp),
-                                enabled = !uiState.isSubmittingEnquiry
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF1E3A8A)
+                                ),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
-                                if (uiState.isSubmittingEnquiry) {
-                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                }
                                 Text(
-                                    text = if (uiState.isSubmittingEnquiry) "Sending..." else "Send Enquiry",
+                                    text = "Book Now",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     modifier = Modifier.padding(vertical = 4.dp)
