@@ -16,7 +16,6 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.safarsakha.data.remote.firebase.FirebaseEnquiryDataSource
 import com.safarsakha.data.repository.impl.EnquiryRepositoryImpl
-import com.safarsakha.domain.model.Enquiry
 import com.safarsakha.domain.model.TourPackage
 import com.safarsakha.presentation.screens.profile.booking.BookingScreen
 import com.safarsakha.domain.repository.AuthRepository
