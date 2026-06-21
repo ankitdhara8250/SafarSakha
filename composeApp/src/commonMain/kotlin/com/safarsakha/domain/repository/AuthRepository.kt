@@ -18,4 +18,5 @@ interface AuthRepository {
     suspend fun logout(): Resource<Unit>
     fun getCurrentUser(): User?
     suspend fun isUserLoggedIn(): Boolean
+    suspend fun getUserProfile(uid: String): Resource<User>
 }

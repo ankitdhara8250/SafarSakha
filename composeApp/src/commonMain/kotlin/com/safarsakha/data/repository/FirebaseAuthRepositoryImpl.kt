@@ -90,6 +90,19 @@ class FirebaseAuthRepositoryImpl(
         authDataSource.getCurrentFirebaseUser() != null
     }
 
+    override suspend fun getUserProfile(uid: String): Resource<User> = withContext(Dispatchers.IO) {
+        try {
+            val userResult = authDataSource.getUserFromFirestore(uid)
+            if (userResult.isSuccess) {
+                Resource.Success(userResult.getOrThrow())
+            } else {
+                Resource.Error(userResult.exceptionOrNull()?.message ?: "Failed to fetch user profile")
+            }
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "An error occurred while fetching the profile")
+        }
+    }
+
     override suspend fun loginAdmin(email: String, password: String): Result<Unit> {
         return try {
             val result = authDataSource.loginUser(email, password)
