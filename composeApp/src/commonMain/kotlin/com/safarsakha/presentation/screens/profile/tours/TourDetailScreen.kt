@@ -61,7 +61,8 @@ import kotlin.reflect.KClass
 @Composable
 fun TourDetailScreen(
     packageId: String,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onBookNow: ((com.safarsakha.domain.model.TourPackage) -> Unit)? = null
 ) {
     val repository = remember { TourPackageRepositoryImpl(FirebaseTourPackageDataSource()) }
     val enquiryRepository = remember { EnquiryRepositoryImpl(FirebaseEnquiryDataSource()) }
@@ -314,7 +315,7 @@ fun TourDetailScreen(
                             // Book Now Button
                             Button(
                                 onClick = {
-                                    // TODO: Integrate booking flow
+                                    onBookNow?.invoke(tourPackage)
                                 },
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = ButtonDefaults.buttonColors(

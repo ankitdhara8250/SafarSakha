@@ -17,9 +17,13 @@ import androidx.navigation3.ui.NavDisplay
 import com.safarsakha.data.remote.firebase.FirebaseEnquiryDataSource
 import com.safarsakha.data.repository.impl.EnquiryRepositoryImpl
 import com.safarsakha.domain.model.Enquiry
+import com.safarsakha.domain.model.TourPackage
+import com.safarsakha.presentation.screens.profile.booking.BookingScreen
 import com.safarsakha.domain.repository.AuthRepository
 import com.safarsakha.domain.usecase.auth.LoginUserUseCase
 import com.safarsakha.domain.usecase.auth.RegisterUserUseCase
+import com.safarsakha.presentation.screens.admin.booking.AdminBookingDetailScreen
+import com.safarsakha.presentation.screens.admin.booking.AdminBookingListScreen
 import com.safarsakha.presentation.screens.admin.dashboard.AdminDashboardScreen
 import com.safarsakha.presentation.screens.admin.feedbackenquiry.AdminEnquiryDetailScreen
 import com.safarsakha.presentation.screens.admin.feedbackenquiry.AdminEnquiryListScreen
@@ -57,12 +61,38 @@ sealed interface AppNavKey : NavKey {
     @Serializable data class EditTourPackage(val packageId: String) : AppNavKey
     @Serializable data object AdminEnquiryList : AppNavKey
     @Serializable data object AdminEnquiryDetail : AppNavKey
+    @Serializable data object AdminBookingList : AppNavKey
+    @Serializable data class AdminBookingDetail(
+        val bookingId: String,
+        val userId: String,
+        val userName: String,
+        val packageId: String,
+        val packageName: String,
+        val packagePrice: Double,
+        val startDate: String,
+        val endDate: String,
+        val bookingDate: String,
+        val bookingStatus: String,
+        val paymentStatus: String,
+        val totalAmount: Double,
+        val cancellationDate: String?
+    ) : AppNavKey
 
     // User
     @Serializable data object UserProfile : AppNavKey
     @Serializable data object UserRegister : AppNavKey
     @Serializable data object UserTourList : AppNavKey
     @Serializable data class UserTourDetail(val packageId: String) : AppNavKey
+    @Serializable data class Booking(
+        val packageId: String,
+        val packageTitle: String,
+        val packagePrice: Double,
+        val packageLocation: String,
+        val packageDuration: String,
+        val packageDescription: String,
+        val packageImageUrl: String,
+        val packageIsActive: Boolean
+    ) : AppNavKey
 
     // Profile drawer
     @Serializable data object ProfileMyProfile : AppNavKey
@@ -79,10 +109,13 @@ sealed interface AppNavKey : NavKey {
             builder.subclass(EditTourPackage::class, EditTourPackage.serializer())
             builder.subclass(AdminEnquiryList::class, AdminEnquiryList.serializer())
             builder.subclass(AdminEnquiryDetail::class, AdminEnquiryDetail.serializer())
+            builder.subclass(AdminBookingList::class, AdminBookingList.serializer())
+            builder.subclass(AdminBookingDetail::class, AdminBookingDetail.serializer())
             builder.subclass(UserProfile::class, UserProfile.serializer())
             builder.subclass(UserRegister::class, UserRegister.serializer())
             builder.subclass(UserTourList::class, UserTourList.serializer())
             builder.subclass(UserTourDetail::class, UserTourDetail.serializer())
+            builder.subclass(Booking::class, Booking.serializer())
             builder.subclass(ProfileMyProfile::class, ProfileMyProfile.serializer())
             builder.subclass(ProfileMyBooking::class, ProfileMyBooking.serializer())
             builder.subclass(ProfileTransaction::class, ProfileTransaction.serializer())
@@ -96,7 +129,6 @@ fun AppNavigation(
     modifier: Modifier = Modifier,
     backStack: NavBackStack<NavKey>
 ) {
-    // Shared admin enquiry ViewModel — created once, reused by list + detail
     val enquiryRepository = remember { EnquiryRepositoryImpl(FirebaseEnquiryDataSource()) }
     val adminFeedbackViewModel = remember { AdminFeedbackViewModel(enquiryRepository) }
 
@@ -115,9 +147,53 @@ fun AppNavigation(
                 AppNavKey.AdminDashboard -> NavEntry(key = route) {
                     AdminDashboardScreen(
                         onTourPackageClick = { backStack.add(AppNavKey.AdminTourPackageList) },
-                        onBookingClick = { },
+                        onBookingClick = { backStack.add(AppNavKey.AdminBookingList) },
                         onFeedbackEnquiryClick = { backStack.add(AppNavKey.AdminEnquiryList) }
                     )
+                }
+
+                AppNavKey.AdminBookingList -> NavEntry(key = route) {
+                    AdminBookingListScreen(
+                        onNavigateBack = { backStack.removeLast() },
+                        onBookingClick = { booking ->
+                            backStack.add(AppNavKey.AdminBookingDetail(
+                                bookingId = booking.bookingId,
+                                userId = booking.userId,
+                                userName = booking.userName,
+                                packageId = booking.packageId,
+                                packageName = booking.packageName,
+                                packagePrice = booking.packagePrice,
+                                startDate = booking.startDate.toString(),
+                                endDate = booking.endDate.toString(),
+                                bookingDate = booking.bookingDate.toString(),
+                                bookingStatus = booking.bookingStatus.name,
+                                paymentStatus = booking.paymentStatus.name,
+                                totalAmount = booking.totalAmount,
+                                cancellationDate = booking.cancellationDate?.toString()
+                            ))
+                        }
+                    )
+                }
+
+                is AppNavKey.AdminBookingDetail -> NavEntry(key = route) {
+                    val booking = remember(route) {
+                        com.safarsakha.domain.model.Booking(
+                            bookingId = route.bookingId,
+                            userId = route.userId,
+                            userName = route.userName,
+                            packageId = route.packageId,
+                            packageName = route.packageName,
+                            packagePrice = route.packagePrice,
+                            startDate = kotlinx.datetime.LocalDate.parse(route.startDate),
+                            endDate = kotlinx.datetime.LocalDate.parse(route.endDate),
+                            bookingDate = kotlinx.datetime.Instant.parse(route.bookingDate),
+                            bookingStatus = com.safarsakha.domain.model.BookingStatus.valueOf(route.bookingStatus),
+                            paymentStatus = com.safarsakha.domain.model.PaymentStatus.valueOf(route.paymentStatus),
+                            totalAmount = route.totalAmount,
+                            cancellationDate = route.cancellationDate?.let { kotlinx.datetime.Instant.parse(it) }
+                        )
+                    }
+                    AdminBookingDetailScreen(booking = booking, onNavigateBack = { backStack.removeLast() })
                 }
 
                 AppNavKey.AdminTourPackageList -> NavEntry(key = route) {
@@ -186,7 +262,50 @@ fun AppNavigation(
                 }
 
                 is AppNavKey.UserTourDetail -> NavEntry(key = route) {
-                    TourDetailScreen(packageId = route.packageId, onNavigateBack = { backStack.removeLast() })
+                    TourDetailScreen(
+                        packageId = route.packageId,
+                        onNavigateBack = { backStack.removeLast() },
+                        onBookNow = { pkg ->
+                            backStack.add(AppNavKey.Booking(
+                                packageId = pkg.id,
+                                packageTitle = pkg.title,
+                                packagePrice = pkg.price,
+                                packageLocation = pkg.location,
+                                packageDuration = pkg.duration,
+                                packageDescription = pkg.description,
+                                packageImageUrl = pkg.imageUrl ?: "",
+                                packageIsActive = pkg.isActive
+                            ))
+                        }
+                    )
+                }
+
+                is AppNavKey.Booking -> NavEntry(key = route) {
+                    val pkg = remember(route) {
+                        TourPackage(
+                            id = route.packageId,
+                            title = route.packageTitle,
+                            price = route.packagePrice,
+                            location = route.packageLocation,
+                            duration = route.packageDuration,
+                            description = route.packageDescription,
+                            imageUrl = route.packageImageUrl.ifEmpty { null },
+                            isActive = route.packageIsActive,
+                            includedServices = emptyList(),
+                            createdAt = kotlinx.datetime.Clock.System.now(),
+                            updatedAt = kotlinx.datetime.Clock.System.now()
+                        )
+                    }
+                    BookingScreen(
+                        tourPackage = pkg,
+                        onNavigateBack = { backStack.removeLast() },
+                        onBookingSuccess = {
+                            backStack.clear(); backStack.add(AppNavKey.ProfileMyBooking)
+                        },
+                        onPaymentFailed = {
+                            backStack.clear(); backStack.add(AppNavKey.ProfileTransaction)
+                        }
+                    )
                 }
 
                 AppNavKey.ProfileMyProfile -> NavEntry(key = route) {
