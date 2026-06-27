@@ -10,9 +10,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BookOnline
 import androidx.compose.material.icons.outlined.Feedback
+import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.Tour
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,22 +25,36 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.safarsakha.domain.repository.AuthRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 // ── Design tokens (matching UserProfileScreen) ──────────────────────────────
-private val NavyColor = Color(0xFF0F172A)
-private val SkyColor = Color(0xFF0EA5E9)
-private val CreamColor = Color(0xFFF4E7D3)
-private val SlateColor = Color(0xFF64748B)
+private val NavyColor   = Color(0xFF0F172A)
+private val SkyColor    = Color(0xFF0EA5E9)
+private val CreamColor  = Color(0xFFF4E7D3)
+private val SlateColor  = Color(0xFF64748B)
 private val BorderColor = Color(0xFFE2E8F0)
-private val BgColor = Color(0xFFFFFFFF)
+private val BgColor     = Color(0xFFFFFFFF)
 private val LightBgColor = Color(0xFFF8FAFC)
+
+// ── Logout-specific color — matches Material 3 error / project ErrorColor ──
+private val LogoutRed = Color(0xFFDC2626)
 
 @Composable
 fun AdminDashboardScreen(
     onTourPackageClick: () -> Unit,
     onBookingClick: () -> Unit,
-    onFeedbackEnquiryClick: () -> Unit
+    onFeedbackEnquiryClick: () -> Unit,
+    // New: called after the admin session is cleared, so the host can navigate
+    // away and clear the back stack.  Defaults to no-op for backward compat.
+    onLogout: () -> Unit = {}
 ) {
+    // ── Logout confirmation dialog state (UI only) ────────────────────────
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = LightBgColor
@@ -51,7 +66,9 @@ fun AdminDashboardScreen(
                 .padding(top = 16.dp, bottom = 24.dp)
         ) {
             // ── HEADER ────────────────────────────────────────────────────
-            BrandHeader()
+            BrandHeader(
+                onLogoutClick = { showLogoutDialog = true }
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -83,6 +100,13 @@ fun AdminDashboardScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
+            // ── LOGOUT BUTTON ─────────────────────────────────────────────
+            // Placed above the footer for good visibility without disrupting
+            // the card layout.
+            LogoutButton(onClick = { showLogoutDialog = true })
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // ── FOOTER ────────────────────────────────────────────────────
             Text(
                 text = "SafarSakha Admin v1.0",
@@ -93,14 +117,142 @@ fun AdminDashboardScreen(
             )
         }
     }
+
+    // ── LOGOUT CONFIRMATION DIALOG ────────────────────────────────────────
+    if (showLogoutDialog) {
+        LogoutConfirmationDialog(
+            onDismiss = { showLogoutDialog = false },
+            onConfirm = {
+                showLogoutDialog = false
+                // Delegate all session-clearing + navigation to the host
+                // (AppNavigation), which has access to AuthRepository and
+                // the NavBackStack.  This keeps the screen free of business
+                // logic and prevents the ViewModel from being modified.
+                onLogout()
+            }
+        )
+    }
 }
 
 // =============================================================================
-// BRAND HEADER
+// LOGOUT BUTTON
+// =============================================================================
+
+/**
+ * A full-width Material 3 button styled in the project's error/red colour.
+ * Rounded corners (14 dp) match the Login button in AdminLoginScreen.
+ */
+@Composable
+private fun LogoutButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp),
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = LogoutRed,
+            contentColor = Color.White
+        ),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 0.dp,
+            pressedElevation  = 0.dp,
+            hoveredElevation  = 2.dp
+        )
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Logout,
+            contentDescription = "Logout",
+            modifier = Modifier.size(18.dp),
+            tint = Color.White
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "Logout",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.1f.sp
+        )
+    }
+}
+
+// =============================================================================
+// LOGOUT CONFIRMATION DIALOG
+// =============================================================================
+
+/**
+ * Material 3 AlertDialog that asks the admin to confirm logout.
+ *
+ * - Cancel  → closes the dialog without any action
+ * - Logout  → calls [onConfirm], which triggers session clearing + navigation
+ */
+@Composable
+private fun LogoutConfirmationDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Outlined.Logout,
+                contentDescription = null,
+                tint = LogoutRed
+            )
+        },
+        title = {
+            Text(
+                text = "Logout",
+                fontWeight = FontWeight.Bold,
+                color = NavyColor
+            )
+        },
+        text = {
+            Text(
+                text = "Do you want to logout?",
+                color = SlateColor
+            )
+        },
+        confirmButton = {
+            // Logout button — red to signal a destructive action
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = LogoutRed,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text(
+                    text = "Logout",
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.dp, BorderColor)
+            ) {
+                Text(
+                    text = "Cancel",
+                    color = SlateColor,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        },
+        containerColor = BgColor,
+        shape = RoundedCornerShape(20.dp)
+    )
+}
+
+// =============================================================================
+// BRAND HEADER  (logout icon added as a top-right action)
 // =============================================================================
 
 @Composable
-private fun BrandHeader() {
+private fun BrandHeader(onLogoutClick: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -125,26 +277,48 @@ private fun BrandHeader() {
                 )
             }
 
-            // Admin badge
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(SkyColor.copy(alpha = 0.1f))
-                    .border(1.dp, SkyColor.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
+            // Admin badge + logout icon in a compact row
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "Admin",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = SkyColor
-                )
+                // Admin badge (unchanged)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(SkyColor.copy(alpha = 0.1f))
+                        .border(1.dp, SkyColor.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "Admin",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = SkyColor
+                    )
+                }
+
+                // Compact logout icon button in the header (secondary entry point)
+                IconButton(
+                    onClick = onLogoutClick,
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(LogoutRed.copy(alpha = 0.08f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Logout,
+                        contentDescription = "Logout",
+                        tint = LogoutRed,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Decorative line
+        // Decorative line (unchanged)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -160,7 +334,7 @@ private fun BrandHeader() {
 }
 
 // =============================================================================
-// ADMIN DASHBOARD CARD
+// ADMIN DASHBOARD CARD  (unchanged)
 // =============================================================================
 
 @Composable

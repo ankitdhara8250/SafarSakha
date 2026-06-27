@@ -44,6 +44,10 @@ import com.safarsakha.presentation.screens.profile.tours.UserTourListScreen
 import com.safarsakha.presentation.screens.profile.transaction.TransactionScreen
 import com.safarsakha.presentation.screens.profile.userlogin.UserProfileViewModel
 import com.safarsakha.presentation.screens.user.profile.UserProfileScreen
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.modules.PolymorphicModuleBuilder
 
@@ -144,10 +148,26 @@ fun AppNavigation(
                 }
 
                 AppNavKey.AdminDashboard -> NavEntry(key = route) {
+                    // Provide AuthRepository so we can call logout() here,
+                    // keeping the Dashboard screen free of business logic.
+                    val authRepository = remember { provideAuthRepository() }
+                    // Coroutine scope for the logout suspend call.
+                    val logoutScope = remember { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+
                     AdminDashboardScreen(
                         onTourPackageClick = { backStack.add(AppNavKey.AdminTourPackageList) },
                         onBookingClick = { backStack.add(AppNavKey.AdminBookingList) },
-                        onFeedbackEnquiryClick = { backStack.add(AppNavKey.AdminEnquiryList) }
+                        onFeedbackEnquiryClick = { backStack.add(AppNavKey.AdminEnquiryList) },
+                        onLogout = {
+                            // 1. Call AuthRepository.logout() to sign out of Firebase
+                            //    and clear any cached admin session/token.
+                            // 2. Navigate to AdminLogin and clear the back stack so
+                            //    pressing Back cannot return to the Dashboard.
+                            logoutScope.launch {
+                                authRepository.logout()
+                                backStack.navigateToAdminLogin()
+                            }
+                        }
                     )
                 }
 
@@ -407,6 +427,12 @@ fun AppNavigation(
 }
 
 fun NavBackStack<NavKey>.navigateToAdminDashboard() { clear(); add(AppNavKey.AdminDashboard) }
+
+fun NavBackStack<NavKey>.navigateToAdminLogin() {
+    clear()                     // remove AdminDashboard and everything above it
+    add(AppNavKey.UserProfile)  // User Login sits at the bottom
+    add(AppNavKey.AdminLogin)   // AdminLogin is the current (top) screen
+}
 fun NavBackStack<NavKey>.navigateToUserTourList() { clear(); add(AppNavKey.UserTourList) }
 /** After logout: wipe the back stack and land on the login screen. */
 fun NavBackStack<NavKey>.navigateToUserLogin() { clear(); add(AppNavKey.UserProfile) }
