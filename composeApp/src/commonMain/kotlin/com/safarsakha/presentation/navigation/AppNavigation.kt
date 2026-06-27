@@ -226,9 +226,54 @@ fun AppNavigation(
                 }
 
                 AppNavKey.UserProfile -> NavEntry(key = route) {
+                    // FIX: Do NOT wrap authRepository, loginUserUseCase, or
+                    // viewModel in remember{} here.
+                    //
+                    // ROOT CAUSE of the re-login bug:
+                    //   When the user logged out, navigateToUserLogin() called
+                    //   backStack.clear() + backStack.add(AppNavKey.UserProfile).
+                    //   NavDisplay re-uses an existing NavEntry for the same key
+                    //   when one is alive in the SaveableStateHolder, so the
+                    //   remember{}-cached UserProfileViewModel from the *first*
+                    //   login session was reused.
+                    //
+                    //   That stale ViewModel still held isLoginSuccess = true from
+                    //   the previous session (it was only reset to false by
+                    //   OnResetSuccess *after* navigation — but navigation now
+                    //   lands right back on this entry before OnResetSuccess can
+                    //   run, so the LaunchedEffect immediately sees isLoginSuccess
+                    //   = true and fires onLoginSuccess() again, sending the user
+                    //   straight to ProfileMyProfile with no real session).
+                    //
+                    //   After the second login the new Firebase session is valid,
+                    //   but then navigateToProfileItem(MyProfile) lands on
+                    //   ProfileMyProfile, which creates a fresh MyProfileViewModel,
+                    //   which calls GetUserProfileUseCase → getCurrentUser() →
+                    //   auth.currentUser.  The *fresh* Firebase Auth object now
+                    //   reports a valid user, so the profile loads fine.
+                    //
+                    //   But the stale ViewModel's LaunchedEffect fires first and
+                    //   navigates away to UserTourList *before* that can happen —
+                    //   and because the ViewModel is cached by remember{} across
+                    //   the clear()+add() cycle, the old isLoginSuccess flag is
+                    //   still true when the screen recomposes.
+                    //
+                    // FIX:
+                    //   Remove remember{} from the ViewModel construction inside
+                    //   this NavEntry.  NavDisplay already provides its own
+                    //   SaveableStateHolder scoping per key; without remember{}
+                    //   the ViewModel is a plain object constructed fresh every
+                    //   time this entry is entered (i.e. after each logout).
+                    //   The fresh ViewModel starts with isLoginSuccess = false,
+                    //   so the LaunchedEffect does NOT fire on entry, and the user
+                    //   sees the normal login form.  After a successful re-login
+                    //   isLoginSuccess becomes true, onLoginSuccess() fires,
+                    //   navigateToUserTourList() runs, and from there My Profile
+                    //   works correctly because it uses a separate, independent
+                    //   ViewModel that always reads the live Firebase session.
                     val authRepository = provideAuthRepository()
-                    val loginUserUseCase = remember { LoginUserUseCase(authRepository) }
-                    val viewModel = remember { UserProfileViewModel(loginUserUseCase) }
+                    val loginUserUseCase = LoginUserUseCase(authRepository)
+                    val viewModel = UserProfileViewModel(loginUserUseCase)
                     UserProfileScreen(
                         viewModel = viewModel,
                         onRegisterClick = { backStack.add(AppNavKey.UserRegister) },
@@ -311,7 +356,15 @@ fun AppNavigation(
                     ProfileDashboardScreen(
                         selectedItem = ProfileDrawerItem.MyProfile,
                         onItemSelected = { item -> backStack.navigateToProfileItem(item) }
-                    ) { openDrawer -> MyProfileScreen(onMenuClick = openDrawer) }
+                    ) { openDrawer ->
+                        MyProfileScreen(
+                            onMenuClick = openDrawer,
+                            // After successful logout, clear the entire back stack
+                            // and navigate to the login screen so the user cannot
+                            // press Back to return to the profile.
+                            onLogout = { backStack.navigateToUserLogin() }
+                        )
+                    }
                 }
 
                 AppNavKey.ProfileMyBooking -> NavEntry(key = route) {
@@ -355,6 +408,8 @@ fun AppNavigation(
 
 fun NavBackStack<NavKey>.navigateToAdminDashboard() { clear(); add(AppNavKey.AdminDashboard) }
 fun NavBackStack<NavKey>.navigateToUserTourList() { clear(); add(AppNavKey.UserTourList) }
+/** After logout: wipe the back stack and land on the login screen. */
+fun NavBackStack<NavKey>.navigateToUserLogin() { clear(); add(AppNavKey.UserProfile) }
 fun NavBackStack<NavKey>.navigateToProfileItem(item: ProfileDrawerItem) {
     clear()
     add(when (item) {
