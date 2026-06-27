@@ -40,6 +40,8 @@ kotlin {
             implementation("org.jetbrains.compose.foundation:foundation:1.8.2")
             // Material3 UI
             implementation("org.jetbrains.compose.material3:material3:1.8.2")
+           //Metrial Icon for All
+            implementation(compose.materialIconsExtended)
             // Compose UI core
             implementation("org.jetbrains.compose.ui:ui:1.8.2")
             // CMP resources
