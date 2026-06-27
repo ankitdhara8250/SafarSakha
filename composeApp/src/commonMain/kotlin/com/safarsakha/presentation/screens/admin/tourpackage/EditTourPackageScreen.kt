@@ -1,16 +1,23 @@
 package com.safarsakha.presentation.screens.admin.tourpackage
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.AddAPhoto
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -25,12 +32,21 @@ import com.safarsakha.data.remote.firebase.FirebaseTourPackageDataSource
 import com.safarsakha.data.repository.impl.TourPackageRepositoryImpl
 import com.safarsakha.domain.usecase.tourpackage.GetTourPackageByIdUseCase
 import com.safarsakha.domain.usecase.tourpackage.UpdateTourPackageUseCase
-import com.safarsakha.presentation.screens.admin.tourpackage.components.AdminTextField
 import io.github.vinceglb.filekit.compose.rememberFilePickerLauncher
 import io.github.vinceglb.filekit.core.PickerType
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.decodeToImageBitmap
 import kotlin.reflect.KClass
+
+// ── Design tokens (matching UserProfileScreen) ──────────────────────────────
+private val NavyColor = Color(0xFF0F172A)
+private val SkyColor = Color(0xFF0EA5E9)
+private val SlateColor = Color(0xFF64748B)
+private val BorderColor = Color(0xFFE2E8F0)
+private val BgColor = Color(0xFFFFFFFF)
+private val LightBgColor = Color(0xFFF8FAFC)
+private val ErrorColor = Color(0xFFDC2626)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditTourPackageScreen(
@@ -43,7 +59,6 @@ fun EditTourPackageScreen(
     val getByIdUseCase = remember { GetTourPackageByIdUseCase(repository) }
     val updateUseCase = remember { UpdateTourPackageUseCase(repository) }
 
-    // FIXED: Pass repository as third parameter
     val viewModel: EditTourPackageViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
@@ -52,10 +67,11 @@ fun EditTourPackageScreen(
             }
         }
     )
+
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    
+
     // Image Picker Launcher
     val filePickerLauncher = rememberFilePickerLauncher(
         type = PickerType.Image,
@@ -66,7 +82,7 @@ fun EditTourPackageScreen(
                         val fileName = platformFile.name
                         val imageExtensions = listOf("jpg", "jpeg", "png", "gif", "webp")
                         val extension = fileName.substringAfterLast(".").lowercase()
-                        
+
                         if (extension in imageExtensions) {
                             val imageBytes = platformFile.readBytes()
                             viewModel.handleEvent(
@@ -106,73 +122,134 @@ fun EditTourPackageScreen(
         }
     }
 
-
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Edit Tour Package",
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E3A8A)
-                    )
-                },
-                navigationIcon = {
-                    TextButton(onClick = { onNavigateBack() }) {
-                        Text("Cancel", color = Color(0xFF1E3A8A))
+                    Column {
+                        Text(
+                            text = "Edit Package",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyColor,
+                            letterSpacing = (-0.3f).sp
+                        )
+                        Text(
+                            text = "Update tour package details",
+                            fontSize = 12.sp,
+                            color = SlateColor
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                navigationIcon = {
+                    IconButton(onClick = { onNavigateBack() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = NavyColor
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = BgColor,
+                    scrolledContainerColor = BgColor
+                ),
+                modifier = Modifier
+                    .border(
+                        width = 1.dp,
+                        color = BorderColor.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(0.dp)
+                    )
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(16.dp)
+            ) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = NavyColor,
+                    contentColor = Color.White,
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F7FB))
+                .background(LightBgColor)
                 .padding(paddingValues)
         ) {
             if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Color(0xFF1E3A8A)
-                )
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = SkyColor,
+                            strokeWidth = 3.dp,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Loading package...",
+                            fontSize = 14.sp,
+                            color = SlateColor
+                        )
+                    }
+                }
             } else {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    // Show form error if any
+                    // ── FORM ERROR ──────────────────────────────────────────
                     uiState.errorMessage?.let { error ->
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3F3)),
-                            shape = RoundedCornerShape(12.dp)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(ErrorColor.copy(alpha = 0.06f))
+                                .border(1.dp, ErrorColor.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
                         ) {
-                            Text(
-                                text = error,
-                                color = Color.Red,
-                                modifier = Modifier.padding(12.dp),
-                                fontSize = 14.sp
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text("⚠️", fontSize = 16.sp)
+                                Text(
+                                    text = error,
+                                    color = ErrorColor,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
 
-                    AdminTextField(
+                    // ── FORM FIELDS ─────────────────────────────────────────
+                    EditPremiumTextField(
                         label = "Tour Title",
                         value = uiState.title,
-                        onValueChange = { viewModel.handleEvent(EditTourPackageEvent.TitleChanged(it)) },
+                        onValueChange = { newValue -> viewModel.handleEvent(EditTourPackageEvent.TitleChanged(newValue)) },
                         error = uiState.errors["title"]
                     )
 
-                    AdminTextField(
+                    EditPremiumTextField(
                         label = "Location",
                         value = uiState.location,
-                        onValueChange = { viewModel.handleEvent(EditTourPackageEvent.LocationChanged(it)) },
-                        placeholder = "e.g. Manali, Himachal Pradesh",
+                        onValueChange = { newValue -> viewModel.handleEvent(EditTourPackageEvent.LocationChanged(newValue)) },
+                        placeholder = "e.g., Manali, Himachal Pradesh",
                         error = uiState.errors["location"]
                     )
 
@@ -180,140 +257,360 @@ fun EditTourPackageScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        AdminTextField(
+                        EditPremiumTextField(
                             label = "Duration",
                             value = uiState.duration,
-                            onValueChange = { viewModel.handleEvent(EditTourPackageEvent.DurationChanged(it)) },
+                            onValueChange = { newValue -> viewModel.handleEvent(EditTourPackageEvent.DurationChanged(newValue)) },
+                            placeholder = "5 Days, 4 Nights",
                             modifier = Modifier.weight(1f),
                             error = uiState.errors["duration"]
                         )
-                        AdminTextField(
+                        EditPremiumTextField(
                             label = "Price (₹)",
                             value = uiState.price,
-                            onValueChange = { viewModel.handleEvent(EditTourPackageEvent.PriceChanged(it)) },
+                            onValueChange = { newValue -> viewModel.handleEvent(EditTourPackageEvent.PriceChanged(newValue)) },
+                            placeholder = "0.00",
                             modifier = Modifier.weight(1f),
                             error = uiState.errors["price"]
                         )
                     }
 
-                    // Image Section
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Text(
-                                "Tour Image",
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.fillMaxWidth(),
-                                color = Color(0xFF334155)
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
+                    // ── IMAGE UPLOAD SECTION ──────────────────────────────
+                    EditImageUploadSection(
+                        selectedImageBytes = uiState.selectedImageBytes,
+                        imageUrl = uiState.imageUrl,
+                        isUpdating = uiState.isUpdating,
+                        onImagePickerClick = { filePickerLauncher.launch() }
+                    )
 
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(180.dp)
-                                    .background(Color(0xFFF1F5F9), RoundedCornerShape(12.dp))
-                                    .clip(RoundedCornerShape(12.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                when {
-                                    uiState.selectedImageBytes != null -> {
-                                        // Preview new selection
-                                        val bitmap = remember(uiState.selectedImageBytes) {
-                                            uiState.selectedImageBytes?.decodeToImageBitmap()
-                                        }
-                                        if (bitmap != null) {
-                                            Image(
-                                                bitmap = bitmap,
-                                                contentDescription = "Selected image",
-                                                modifier = Modifier.fillMaxSize(),
-                                                contentScale = ContentScale.Crop
-                                            )
-                                            Badge(
-                                                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-                                                containerColor = Color(0xFF059669)
-                                            ) {
-                                                Text("NEW", color = Color.White, fontSize = 10.sp)
-                                            }
-                                        } else {
-                                            Text("Failed to load image", color = Color.Red)
-                                        }
-                                    }
-                                    !uiState.imageUrl.isNullOrEmpty() -> {
-                                        // Show existing image from Firebase
-                                        AsyncImage(
-                                            model = uiState.imageUrl,
-                                            contentDescription = "Tour image",
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentScale = ContentScale.Crop
-                                        )
-                                    }
-                                    else -> {
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text("🖼️", fontSize = 48.sp)
-                                            Text("No image available", color = Color.Gray, fontSize = 14.sp)
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            TextButton(
-                                onClick = {
-                                    // Launch the actual image picker
-                                    filePickerLauncher.launch()
-                                },
-                                colors = ButtonDefaults.textButtonColors(
-                                    contentColor = Color(0xFF1E3A8A)
-                                )
-                            ) {
-                                Text("Change Image", color = Color(0xFF1E3A8A))
-                            }
-                        }
-                    }
-
-                    AdminTextField(
+                    EditPremiumTextField(
                         label = "Description",
                         value = uiState.description,
-                        onValueChange = { viewModel.handleEvent(EditTourPackageEvent.DescriptionChanged(it)) },
+                        onValueChange = { newValue -> viewModel.handleEvent(EditTourPackageEvent.DescriptionChanged(newValue)) },
+                        placeholder = "Describe the tour experience...",
                         minLines = 4,
                         error = uiState.errors["description"]
                     )
 
-                    AdminTextField(
+                    EditPremiumTextField(
                         label = "Included Services",
                         value = uiState.includedServices,
-                        onValueChange = { viewModel.handleEvent(EditTourPackageEvent.IncludedServicesChanged(it)) },
+                        onValueChange = { newValue -> viewModel.handleEvent(EditTourPackageEvent.IncludedServicesChanged(newValue)) },
                         placeholder = "Hotel, Meals, Transport, Guide (comma-separated)",
                         error = uiState.errors["includedServices"]
                     )
 
+                    // ── UPDATE BUTTON ──────────────────────────────────────
                     Button(
                         onClick = { viewModel.handleEvent(EditTourPackageEvent.UpdatePackage) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A)),
                         enabled = !uiState.isUpdating,
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = NavyColor,
+                            contentColor = Color.White,
+                            disabledContainerColor = NavyColor.copy(alpha = 0.45f),
+                            disabledContentColor = Color.White.copy(alpha = 0.60f)
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 0.dp,
+                            pressedElevation = 0.dp,
+                            hoveredElevation = 2.dp
+                        )
                     ) {
                         if (uiState.isUpdating) {
                             CircularProgressIndicator(
                                 color = Color.White,
-                                modifier = Modifier.size(24.dp)
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(22.dp)
                             )
                         } else {
-                            Text("Update Package", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text(
+                                text = "Update Package",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 16.sp,
+                                letterSpacing = 0.1f.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+        }
+    }
+}
+
+// =============================================================================
+// EDIT PREMIUM TEXT FIELD
+// =============================================================================
+
+@Composable
+private fun EditPremiumTextField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String = "",
+    modifier: Modifier = Modifier,
+    minLines: Int = 1,
+    error: String? = null
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = NavyColor
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = {
+                if (placeholder.isNotEmpty()) {
+                    Text(
+                        text = placeholder,
+                        fontSize = 14.sp,
+                        color = SlateColor.copy(alpha = 0.45f)
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            isError = error != null,
+            minLines = minLines,
+            singleLine = minLines == 1,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = SkyColor,
+                focusedLabelColor = SkyColor,
+                focusedTextColor = NavyColor,
+                focusedContainerColor = Color.Transparent,
+                unfocusedBorderColor = BorderColor,
+                unfocusedLabelColor = SlateColor,
+                unfocusedTextColor = NavyColor,
+                unfocusedContainerColor = Color.Transparent,
+                disabledBorderColor = BorderColor.copy(alpha = 0.45f),
+                disabledLabelColor = SlateColor.copy(alpha = 0.35f),
+                disabledTextColor = NavyColor.copy(alpha = 0.35f),
+                disabledContainerColor = BorderColor.copy(alpha = 0.12f),
+                errorBorderColor = ErrorColor,
+                errorLabelColor = ErrorColor,
+                errorTextColor = NavyColor,
+                errorContainerColor = Color.Transparent
+            )
+        )
+
+        if (error != null) {
+            Text(
+                text = error,
+                color = ErrorColor,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+// =============================================================================
+// EDIT IMAGE UPLOAD SECTION
+// =============================================================================
+
+@Composable
+private fun EditImageUploadSection(
+    selectedImageBytes: ByteArray?,
+    imageUrl: String?,
+    isUpdating: Boolean,
+    onImagePickerClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = NavyColor.copy(alpha = 0.04f),
+                spotColor = NavyColor.copy(alpha = 0.08f)
+            )
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = NavyColor.copy(alpha = 0.02f),
+                spotColor = NavyColor.copy(alpha = 0.04f)
+            ),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = BgColor
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        listOf(
+                            Color(0xFFF4E7D3).copy(alpha = 0.85f),
+                            BorderColor.copy(alpha = 0.60f),
+                            BorderColor.copy(alpha = 0.25f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(20.dp)
+                )
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Tour Image",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = NavyColor,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Image preview box
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFFF1F5F9),
+                                Color(0xFFF8FAFC)
+                            )
+                        )
+                    )
+                    .border(1.dp, BorderColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    selectedImageBytes != null -> {
+                        // Preview new selection
+                        val bitmap = remember(selectedImageBytes) {
+                            selectedImageBytes.decodeToImageBitmap()
+                        }
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap,
+                                contentDescription = "Selected image",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                            // New badge
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(12.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(SkyColor.copy(alpha = 0.9f))
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = "NEW",
+                                        color = Color.White,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        } else {
+                            Text("Failed to load image", color = ErrorColor)
+                        }
+                    }
+
+                    !imageUrl.isNullOrEmpty() -> {
+                        // Show existing image from Firebase
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = "Tour image",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    else -> {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(SkyColor.copy(alpha = 0.1f))
+                                    .border(1.dp, SkyColor.copy(alpha = 0.2f), RoundedCornerShape(50)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.AddAPhoto,
+                                    contentDescription = null,
+                                    tint = SkyColor,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                            Text(
+                                text = "No image available",
+                                color = SlateColor,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                     }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = onImagePickerClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                enabled = !isUpdating,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = NavyColor
+                ),
+                border = BorderStroke(1.dp, SkyColor)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.AddAPhoto,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = SkyColor
+                    )
+                    Text(
+                        text = if (selectedImageBytes != null || !imageUrl.isNullOrEmpty()) "Change Image" else "Select Image",
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp,
+                        color = SkyColor
+                    )
+                }
+            }
+
+            if (!imageUrl.isNullOrEmpty() && selectedImageBytes == null) {
+                Text(
+                    text = "Current image from server",
+                    color = SlateColor.copy(alpha = 0.5f),
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
         }
     }

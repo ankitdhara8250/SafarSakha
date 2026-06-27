@@ -1,15 +1,22 @@
 package com.safarsakha.presentation.screens.admin.tourpackage
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.AddAPhoto
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -25,6 +32,15 @@ import com.safarsakha.data.repository.impl.TourPackageRepositoryImpl
 import com.safarsakha.domain.usecase.tourpackage.CreateTourPackageUseCase
 import kotlinx.datetime.Clock
 import kotlin.reflect.KClass
+
+// ── Design tokens (matching UserProfileScreen) ──────────────────────────────
+private val NavyColor = Color(0xFF0F172A)
+private val SkyColor = Color(0xFF0EA5E9)
+private val SlateColor = Color(0xFF64748B)
+private val BorderColor = Color(0xFFE2E8F0)
+private val BgColor = Color(0xFFFFFFFF)
+private val LightBgColor = Color(0xFFF8FAFC)
+private val ErrorColor = Color(0xFFDC2626)
 
 @Composable
 expect fun ImagePicker(
@@ -74,74 +90,111 @@ fun CreateTourPackageScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Create Tour Package",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E3A8A)
-                    )
+                    Column {
+                        Text(
+                            text = "Create Package",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyColor,
+                            letterSpacing = (-0.3f).sp
+                        )
+                        Text(
+                            text = "Add a new tour package",
+                            fontSize = 12.sp,
+                            color = SlateColor
+                        )
+                    }
                 },
                 navigationIcon = {
-                    TextButton(onClick = {
+                    IconButton(onClick = {
                         viewModel.handleEvent(CreateTourPackageEvent.ResetSuccess)
                         onNavigateBack()
                     }) {
-                        Text("Back", color = Color(0xFF1E3A8A))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = NavyColor
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = BgColor,
+                    scrolledContainerColor = BgColor
+                ),
+                modifier = Modifier
+                    .border(
+                        width = 1.dp,
+                        color = BorderColor.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(0.dp)
+                    )
             )
         }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F7FB))
+                .background(LightBgColor)
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            // ── FORM ERROR ──────────────────────────────────────────────
             uiState.errors["form"]?.let { error ->
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3F3)),
-                    shape = RoundedCornerShape(12.dp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(ErrorColor.copy(alpha = 0.06f))
+                        .border(1.dp, ErrorColor.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    Text(
-                        text = error,
-                        color = Color.Red,
-                        modifier = Modifier.padding(12.dp),
-                        fontSize = 14.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("⚠️", fontSize = 16.sp)
+                        Text(
+                            text = error,
+                            color = ErrorColor,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
 
-            AdminTextField(
+            // ── FORM FIELDS ─────────────────────────────────────────────
+            PremiumTextField(
                 label = "Tour Title",
                 value = uiState.title,
                 onValueChange = { viewModel.handleEvent(CreateTourPackageEvent.TitleChanged(it)) },
+                placeholder = "Enter tour title",
                 error = uiState.errors["title"]
             )
 
-            AdminTextField(
+            PremiumTextField(
                 label = "Location",
                 value = uiState.location,
                 onValueChange = { viewModel.handleEvent(CreateTourPackageEvent.LocationChanged(it)) },
-                placeholder = "e.g. Manali, Himachal Pradesh",
+                placeholder = "e.g., Manali, Himachal Pradesh",
                 error = uiState.errors["location"]
             )
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AdminTextField(
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                PremiumTextField(
                     label = "Duration",
                     value = uiState.duration,
                     onValueChange = { viewModel.handleEvent(CreateTourPackageEvent.DurationChanged(it)) },
-                    placeholder = "e.g. 5 Days, 4 Nights",
+                    placeholder = "5 Days, 4 Nights",
                     modifier = Modifier.weight(1f),
                     error = uiState.errors["duration"]
                 )
 
-                AdminTextField(
+                PremiumTextField(
                     label = "Price (₹)",
                     value = uiState.price,
                     onValueChange = { viewModel.handleEvent(CreateTourPackageEvent.PriceChanged(it)) },
@@ -151,15 +204,16 @@ fun CreateTourPackageScreen(
                 )
             }
 
-            AdminTextField(
+            PremiumTextField(
                 label = "Description",
                 value = uiState.description,
                 onValueChange = { viewModel.handleEvent(CreateTourPackageEvent.DescriptionChanged(it)) },
+                placeholder = "Describe the tour experience...",
                 minLines = 4,
                 error = uiState.errors["description"]
             )
 
-            AdminTextField(
+            PremiumTextField(
                 label = "Included Services",
                 value = uiState.includedServices,
                 onValueChange = { viewModel.handleEvent(CreateTourPackageEvent.IncludedServicesChanged(it)) },
@@ -167,90 +221,61 @@ fun CreateTourPackageScreen(
                 error = uiState.errors["includedServices"]
             )
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        "Tour Image",
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.fillMaxWidth(),
-                        color = Color(0xFF334155)
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp)
-                            .background(Color(0xFFF1F5F9), RoundedCornerShape(12.dp))
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (uiState.selectedImageBytes != null) {
-                            AsyncImage(
-                                model = uiState.selectedImageBytes,
-                                contentDescription = "Selected Tour Image",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                            // Success badge overlay
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(8.dp)
-                                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
-                            ) {
-                                Text("✅ Selected", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                            }
-                        } else if (!uiState.imageUrl.isNullOrEmpty()) {
-                            AsyncImage(
-                                model = uiState.imageUrl,
-                                contentDescription = "Tour Image",
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("🖼️", fontSize = 40.sp)
-                                Text("No image selected", color = Color(0xFF64748B), fontSize = 12.sp)
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    TextButton(onClick = { showImagePicker = true }) {
-                        Text("Select Image", color = Color(0xFF1E3A8A))
-                    }
-                }
-            }
+            // ── IMAGE UPLOAD SECTION ────────────────────────────────────
+            ImageUploadSection(
+                selectedImageBytes = uiState.selectedImageBytes,
+                imageUrl = uiState.imageUrl,
+                isLoading = uiState.isLoading,
+                onImagePickerClick = { showImagePicker = true }
+            )
 
+            // ── SAVE BUTTON ─────────────────────────────────────────────
             Button(
                 onClick = { viewModel.handleEvent(CreateTourPackageEvent.SavePackage) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A)),
                 enabled = !uiState.isLoading,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = NavyColor,
+                    contentColor = Color.White,
+                    disabledContainerColor = NavyColor.copy(alpha = 0.45f),
+                    disabledContentColor = Color.White.copy(alpha = 0.60f)
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp,
+                    hoveredElevation = 2.dp
+                )
             ) {
                 if (uiState.isLoading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier.size(22.dp),
                         color = Color.White,
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Save Tour Package", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(
+                        text = "Save Tour Package",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        letterSpacing = 0.1f.sp
+                    )
                 }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
 
+// =============================================================================
+// PREMIUM TEXT FIELD
+// =============================================================================
+
 @Composable
-fun AdminTextField(
+fun PremiumTextField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
@@ -264,34 +289,244 @@ fun AdminTextField(
             text = label,
             fontSize = 14.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF334155)
+            color = NavyColor
         )
         Spacer(modifier = Modifier.height(6.dp))
+
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             placeholder = {
                 if (placeholder.isNotEmpty()) {
-                    Text(placeholder, fontSize = 14.sp, color = Color(0xFF94A3B8))
+                    Text(
+                        text = placeholder,
+                        fontSize = 14.sp,
+                        color = SlateColor.copy(alpha = 0.45f)
+                    )
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF1E3A8A),
-                unfocusedBorderColor = Color(0xFFCBD5E1),
-                errorBorderColor = Color.Red
-            ),
+            shape = RoundedCornerShape(12.dp),
             isError = error != null,
-            minLines = minLines
+            minLines = minLines,
+            singleLine = minLines == 1,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = SkyColor,
+                focusedLabelColor = SkyColor,
+                focusedTextColor = NavyColor,
+                focusedContainerColor = Color.Transparent,
+                unfocusedBorderColor = BorderColor,
+                unfocusedLabelColor = SlateColor,
+                unfocusedTextColor = NavyColor,
+                unfocusedContainerColor = Color.Transparent,
+                disabledBorderColor = BorderColor.copy(alpha = 0.45f),
+                disabledLabelColor = SlateColor.copy(alpha = 0.35f),
+                disabledTextColor = NavyColor.copy(alpha = 0.35f),
+                disabledContainerColor = BorderColor.copy(alpha = 0.12f),
+                errorBorderColor = ErrorColor,
+                errorLabelColor = ErrorColor,
+                errorTextColor = NavyColor,
+                errorContainerColor = Color.Transparent
+            )
         )
+
         if (error != null) {
             Text(
                 text = error,
-                color = Color.Red,
+                color = ErrorColor,
                 fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(top = 4.dp)
             )
+        }
+    }
+}
+
+// =============================================================================
+// IMAGE UPLOAD SECTION
+// =============================================================================
+
+@Composable
+private fun ImageUploadSection(
+    selectedImageBytes: ByteArray?,
+    imageUrl: String?,
+    isLoading: Boolean,
+    onImagePickerClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = NavyColor.copy(alpha = 0.04f),
+                spotColor = NavyColor.copy(alpha = 0.08f)
+            )
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = NavyColor.copy(alpha = 0.02f),
+                spotColor = NavyColor.copy(alpha = 0.04f)
+            ),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = BgColor
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        listOf(
+                            Color(0xFFF4E7D3).copy(alpha = 0.85f),
+                            BorderColor.copy(alpha = 0.60f),
+                            BorderColor.copy(alpha = 0.25f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(20.dp)
+                )
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Tour Image",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = NavyColor,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Image preview box
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color(0xFFF1F5F9),
+                                Color(0xFFF8FAFC)
+                            )
+                        )
+                    )
+                    .border(1.dp, BorderColor.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    selectedImageBytes != null -> {
+                        AsyncImage(
+                            model = selectedImageBytes,
+                            contentDescription = "Selected Tour Image",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                        // Success badge
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(12.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(NavyColor.copy(alpha = 0.85f))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text("✓", color = Color.White, fontSize = 12.sp)
+                                Text(
+                                    text = "Selected",
+                                    color = Color.White,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    !imageUrl.isNullOrEmpty() -> {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = "Tour Image",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    else -> {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(SkyColor.copy(alpha = 0.1f))
+                                    .border(1.dp, SkyColor.copy(alpha = 0.2f), RoundedCornerShape(50)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.AddAPhoto,
+                                    contentDescription = null,
+                                    tint = SkyColor,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                            Text(
+                                text = "No image selected",
+                                color = SlateColor,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Tap the button below to add an image",
+                                color = SlateColor.copy(alpha = 0.6f),
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = onImagePickerClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                enabled = !isLoading,
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = NavyColor
+                ),
+                border = BorderStroke(1.dp, SkyColor)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.AddAPhoto,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = SkyColor
+                    )
+                    Text(
+                        text = if (selectedImageBytes != null) "Change Image" else "Select Image",
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 14.sp,
+                        color = SkyColor
+                    )
+                }
+            }
         }
     }
 }

@@ -19,6 +19,13 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import com.safarsakha.domain.model.TourPackage
 
+// ── Design tokens (matching UserProfileScreen) ──────────────────────────────
+private val NavyColor = Color(0xFF0F172A)
+private val SkyColor = Color(0xFF0EA5E9)
+private val SlateColor = Color(0xFF64748B)
+private val BorderColor = Color(0xFFE2E8F0)
+private val PriceColor = Color(0xFF059669) // Green color for price
+
 @Composable
 fun TourPackageCard(
     tourPackage: TourPackage,
@@ -70,7 +77,7 @@ fun TourPackageCard(
                 if (!tourPackage.imageUrl.isNullOrEmpty()) {
                     var isLoading by remember { mutableStateOf(true) }
                     var isError by remember { mutableStateOf(false) }
-                    
+
                     AsyncImage(
                         model = tourPackage.imageUrl,
                         contentDescription = tourPackage.title,
@@ -81,15 +88,15 @@ fun TourPackageCard(
                             isError = state is AsyncImagePainter.State.Error
                         }
                     )
-                    
+
                     if (isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(32.dp),
-                            color = Color(0xFF1E3A8A),
+                            color = SkyColor,
                             strokeWidth = 2.dp
                         )
                     }
-                    
+
                     if (isError) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("⚠️", fontSize = 24.sp)
@@ -102,13 +109,13 @@ fun TourPackageCard(
                         Text("No Image", color = Color(0xFF94A3B8), fontSize = 12.sp)
                     }
                 }
-                
+
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(12.dp),
                     shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFF1E3A8A)
+                    color = PriceColor
                 ) {
                     Text(
                         text = "₹${tourPackage.price}",
@@ -125,7 +132,7 @@ fun TourPackageCard(
                     text = tourPackage.title,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A),
+                    color = NavyColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -138,7 +145,7 @@ fun TourPackageCard(
                     Text(
                         text = tourPackage.location,
                         fontSize = 13.sp,
-                        color = Color(0xFF64748B)
+                        color = SlateColor
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(text = "⏱️", fontSize = 14.sp)
@@ -146,7 +153,7 @@ fun TourPackageCard(
                     Text(
                         text = tourPackage.duration,
                         fontSize = 13.sp,
-                        color = Color(0xFF64748B)
+                        color = SlateColor
                     )
                 }
 
@@ -169,7 +176,7 @@ fun TourPackageCard(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onEditClick) {
-                        Text("Edit", color = Color(0xFF1E3A8A))
+                        Text("Edit", color = SkyColor)
                     }
                     TextButton(onClick = { showDeleteDialog = true }) {
                         Text("Delete", color = Color.Red)
