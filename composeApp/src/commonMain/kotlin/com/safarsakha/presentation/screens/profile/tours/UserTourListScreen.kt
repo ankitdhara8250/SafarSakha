@@ -1,18 +1,28 @@
 package com.safarsakha.presentation.screens.profile.tours
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -114,20 +124,45 @@ fun UserTourListScreen(
                         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 20.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(
-                            items = state.packages,
-                            key = { it.id.ifEmpty { "pkg_${it.hashCode()}" } }
-                        ) { packageItem ->
-                            UserTourCard(
-                                tourPackage = packageItem,
-                                onClick = { onTourClick(packageItem.id) }
+                        // ── City Filter UI (pinned as first item) ────────────────────────
+                        item(key = "city_filter") {
+                            CityFilterBar(
+                                cityFilter = state.cityFilter,
+                                onCityChanged = { city ->
+                                    viewModel.handleEvent(UserTourListEvent.FilterByCity(city))
+                                },
+                                onClearFilter = {
+                                    viewModel.handleEvent(UserTourListEvent.ClearCityFilter)
+                                }
                             )
+                        }
+
+                        // ── No-match state (city typed but nothing found) ─────────────────
+                        if (state.cityFilter.isNotBlank() && state.packages.isEmpty()) {
+                            item(key = "city_no_match") {
+                                CityNoMatchState(
+                                    city = state.cityFilter,
+                                    onClearFilter = {
+                                        viewModel.handleEvent(UserTourListEvent.ClearCityFilter)
+                                    }
+                                )
+                            }
+                        } else {
+                            // ── Tour cards ───────────────────────────────────────────────
+                            items(
+                                items = state.packages,
+                                key = { it.id.ifEmpty { "pkg_${it.hashCode()}" } }
+                            ) { packageItem ->
+                                UserTourCard(
+                                    tourPackage = packageItem,
+                                    onClick = { onTourClick(packageItem.id) }
+                                )
+                            }
                         }
                     }
                 }
 
                 is UserTourListUiState.Empty -> {
-                    // Upgraded Empty State to match the premium template pattern
                     Column(
                         modifier = Modifier
                             .align(Alignment.Center)
@@ -160,9 +195,10 @@ fun UserTourListScreen(
                 }
 
                 is UserTourListUiState.Error -> {
-                    // Upgraded Error State to match the premium template pattern
                     Box(
-                        modifier = Modifier.fillMaxSize().padding(24.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(24.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
@@ -207,6 +243,149 @@ fun UserTourListScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+// ── City Filter Bar ──────────────────────────────────────────────────────────
+
+/**
+ * A self-contained, Material 3-styled city search bar.
+ *
+ * Design decisions:
+ * - [OutlinedTextField] keeps it visually consistent with the rest of the app.
+ * - The trailing clear icon (✕) appears only when there is text — avoids visual clutter.
+ * - Keyboard IME action "Search" dismisses the keyboard and applies the filter immediately.
+ * - Capitalises the first letter of every word automatically (cities), reducing friction.
+ */
+@Composable
+private fun CityFilterBar(
+    cityFilter: String,
+    onCityChanged: (String) -> Unit,
+    onClearFilter: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    OutlinedTextField(
+        value = cityFilter,
+        onValueChange = onCityChanged,
+        modifier = modifier.fillMaxWidth(),
+        placeholder = {
+            Text(
+                text = "Filter by city…",
+                fontSize = 14.sp,
+                color = SlateColor.copy(alpha = 0.6f)
+            )
+        },
+        leadingIcon = {
+            Text(
+                text = "📍",
+                fontSize = 16.sp,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        },
+        trailingIcon = {
+            AnimatedVisibility(
+                visible = cityFilter.isNotEmpty(),
+                enter = fadeIn() + slideInVertically(),
+                exit = fadeOut() + slideOutVertically()
+            ) {
+                IconButton(onClick = {
+                    onClearFilter()
+                    keyboardController?.hide()
+                }) {
+                    Text(
+                        text = "✕",
+                        fontSize = 14.sp,
+                        color = SlateColor,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        },
+        label = {
+            Text(
+                text = "City",
+                fontSize = 12.sp,
+                color = SlateColor
+            )
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(14.dp),
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Words,
+            imeAction = ImeAction.Search
+        ),
+        keyboardActions = KeyboardActions(
+            onSearch = { keyboardController?.hide() }
+        ),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = SkyColor,
+            unfocusedBorderColor = BorderColor,
+            focusedLabelColor = SkyColor,
+            unfocusedLabelColor = SlateColor,
+            cursorColor = SkyColor
+        )
+    )
+}
+
+// ── No-Match State ───────────────────────────────────────────────────────────
+
+/**
+ * Shown when a city filter is active but no tour matches.
+ * Includes a "Clear Filter" button to restore the full list immediately.
+ */
+@Composable
+private fun CityNoMatchState(
+    city: String,
+    onClearFilter: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(RoundedCornerShape(50))
+                .background(SlateColor.copy(alpha = 0.08f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("🏙️", fontSize = 28.sp)
+        }
+        Text(
+            text = "Sorry, currently service is not available for this city.",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = NavyColor,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+        Text(
+            text = "We couldn't find any tours in \"$city\".",
+            fontSize = 13.sp,
+            color = SlateColor.copy(alpha = 0.75f),
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        OutlinedButton(
+            onClick = onClearFilter,
+            shape = RoundedCornerShape(14.dp),
+            border = ButtonDefaults.outlinedButtonBorder.copy(
+                // Reuse SkyColor for the outline to match the filter field accent
+            ),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = NavyColor)
+        ) {
+            Text(
+                text = "Clear Filter",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp
+            )
         }
     }
 }
