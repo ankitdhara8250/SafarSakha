@@ -6,6 +6,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.LocalAutofillHighlightColor
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
@@ -351,6 +352,10 @@ private fun LoginCard(
 // PREMIUM OUTLINED TEXT FIELD
 // =============================================================================
 
+// =============================================================================
+// PREMIUM OUTLINED TEXT FIELD
+// =============================================================================
+
 @Composable
 private fun PremiumTextField(
     value: String,
@@ -364,41 +369,46 @@ private fun PremiumTextField(
     enabled: Boolean = true,
     modifier: Modifier = Modifier
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(text = label, fontSize = 14.sp) },
-        placeholder = {
-            Text(text = placeholder, fontSize = 14.sp, color = SlateColor.copy(alpha = 0.45f))
-        },
-        leadingIcon = leadingIcon,
-        trailingIcon = trailingIcon,
-        visualTransformation = visualTransformation,
-        keyboardOptions = keyboardOptions,
-        enabled = enabled,
-        singleLine = true,
-        interactionSource = remember { MutableInteractionSource() },
-        shape = RoundedCornerShape(12.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = SkyColor,
-            focusedLabelColor = SkyColor,
-            focusedLeadingIconColor = SkyColor,
-            focusedTextColor = NavyColor,
-            focusedContainerColor = Color.Transparent,
-            unfocusedBorderColor = BorderColor,
-            unfocusedLabelColor = SlateColor,
-            unfocusedLeadingIconColor = SlateColor,
-            unfocusedTextColor = NavyColor,
-            unfocusedContainerColor = Color.Transparent,
-            disabledBorderColor = BorderColor.copy(alpha = 0.45f),
-            disabledLabelColor = SlateColor.copy(alpha = 0.35f),
-            disabledTextColor = NavyColor.copy(alpha = 0.35f),
-            disabledContainerColor = BorderColor.copy(alpha = 0.12f),
-            errorBorderColor = ErrorColor,
-            errorLabelColor = ErrorColor,
-            errorTextColor = NavyColor,
-            errorContainerColor = Color.Transparent
-        ),
-        modifier = modifier
-    )
+    // Overrides the Android-specific system autofill/clipboard yellow tint tint
+    CompositionLocalProvider(
+        LocalAutofillHighlightColor provides Color.Transparent
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(text = label, fontSize = 14.sp) },
+            placeholder = {
+                Text(text = placeholder, fontSize = 14.sp, color = SlateColor.copy(alpha = 0.45f))
+            },
+            leadingIcon = leadingIcon,
+            trailingIcon = trailingIcon,
+            visualTransformation = visualTransformation,
+            keyboardOptions = keyboardOptions,
+            enabled = enabled,
+            singleLine = true,
+            interactionSource = remember { MutableInteractionSource() },
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = SkyColor,
+                focusedLabelColor = SkyColor,
+                focusedLeadingIconColor = SkyColor,
+                focusedTextColor = NavyColor,
+                focusedContainerColor = Color.Transparent,
+                unfocusedBorderColor = BorderColor,
+                unfocusedLabelColor = SlateColor,
+                unfocusedLeadingIconColor = SlateColor,
+                unfocusedTextColor = NavyColor,
+                unfocusedContainerColor = Color.Transparent,
+                disabledBorderColor = BorderColor.copy(alpha = 0.45f),
+                disabledLabelColor = SlateColor.copy(alpha = 0.35f),
+                disabledTextColor = NavyColor.copy(alpha = 0.35f),
+                disabledContainerColor = BorderColor.copy(alpha = 0.12f),
+                errorBorderColor = ErrorColor,
+                errorLabelColor = ErrorColor,
+                errorTextColor = NavyColor,
+                errorContainerColor = Color.Transparent
+            ),
+            modifier = modifier
+        )
+    }
 }
