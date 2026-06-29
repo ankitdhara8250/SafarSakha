@@ -440,6 +440,7 @@ private fun TransactionStatusBadge(status: PaymentStatus) {
     }
 }
 
+
 @Composable
 private fun DetailRow(label: String, value: String) {
     Row(
