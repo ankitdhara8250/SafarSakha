@@ -82,18 +82,34 @@ private class BookingFlowViewModel(
     private val _state = mutableStateOf(BookingFlowState())
     val state: State<BookingFlowState> get() = _state
 
-    fun setStartDate(d: LocalDate) { _state.value = _state.value.copy(startDate = d, errorMessage = null) }
-    fun setEndDate(d: LocalDate) { _state.value = _state.value.copy(endDate = d, errorMessage = null) }
+    fun setStartDate(d: LocalDate) {
+        _state.value = _state.value.copy(startDate = d, errorMessage = null)
+    }
+
+    fun setEndDate(d: LocalDate) {
+        _state.value = _state.value.copy(endDate = d, errorMessage = null)
+    }
 
     fun proceedToPayment() {
         val s = _state.value.startDate
         val e = _state.value.endDate
-        if (s == null || e == null) { _state.value = _state.value.copy(errorMessage = "Please select both start and end dates"); return }
-        if (e < s) { _state.value = _state.value.copy(errorMessage = "End date must be after start date"); return }
+        if (s == null || e == null) {
+            _state.value =
+                _state.value.copy(errorMessage = "Please select both start and end dates"); return
+        }
+        if (e < s) {
+            _state.value =
+                _state.value.copy(errorMessage = "End date must be after start date"); return
+        }
         _state.value = _state.value.copy(step = BookingStep.PAYMENT, errorMessage = null)
     }
 
-    fun updateCard(holderName: String? = null, number: String? = null, expiry: String? = null, cvv: String? = null) {
+    fun updateCard(
+        holderName: String? = null,
+        number: String? = null,
+        expiry: String? = null,
+        cvv: String? = null
+    ) {
         _state.value = _state.value.copy(
             cardHolderName = holderName ?: _state.value.cardHolderName,
             cardNumber = number ?: _state.value.cardNumber,
@@ -105,15 +121,22 @@ private class BookingFlowViewModel(
 
     fun processPayment(scope: kotlinx.coroutines.CoroutineScope) {
         val s = _state.value
-        if (s.cardHolderName.isBlank()) { _state.value = s.copy(errorMessage = "Card holder name is required"); return }
+        if (s.cardHolderName.isBlank()) {
+            _state.value = s.copy(errorMessage = "Card holder name is required"); return
+        }
         val cleanCard = s.cardNumber.replace(" ", "").replace("-", "")
         if (cleanCard.length < 13 || cleanCard.length > 19 || !cleanCard.all { it.isDigit() }) {
             _state.value = s.copy(errorMessage = "Enter a valid card number (13–19 digits)"); return
         }
-        if (!isValidExpiry(s.expiryDate)) { _state.value = s.copy(errorMessage = "Enter a valid expiry date (MM/YY)"); return }
-        if (s.cvv.length < 3 || !s.cvv.all { it.isDigit() }) { _state.value = s.copy(errorMessage = "CVV must be 3–4 digits"); return }
+        if (!isValidExpiry(s.expiryDate)) {
+            _state.value = s.copy(errorMessage = "Enter a valid expiry date (MM/YY)"); return
+        }
+        if (s.cvv.length < 3 || !s.cvv.all { it.isDigit() }) {
+            _state.value = s.copy(errorMessage = "CVV must be 3–4 digits"); return
+        }
 
-        _state.value = s.copy(step = BookingStep.PROCESSING, isProcessing = true, errorMessage = null)
+        _state.value =
+            s.copy(step = BookingStep.PROCESSING, isProcessing = true, errorMessage = null)
 
         scope.launch {
             delay(2000)
@@ -199,7 +222,8 @@ fun BookingScreen(
     onPaymentFailed: () -> Unit
 ) {
     val bookingRepository = remember { BookingRepositoryImpl(FirebaseBookingDataSource()) }
-    val transactionRepository = remember { TransactionRepositoryImpl(FirebaseTransactionDataSource()) }
+    val transactionRepository =
+        remember { TransactionRepositoryImpl(FirebaseTransactionDataSource()) }
 
     val viewModel: BookingFlowViewModel = viewModel(
         key = "booking_${tourPackage.id}",
@@ -229,6 +253,7 @@ fun BookingScreen(
             onNext = { viewModel.proceedToPayment() },
             onBack = onNavigateBack
         )
+
         BookingStep.PAYMENT -> PaymentStep(
             tourPackage = tourPackage,
             startDate = state.startDate!!,
@@ -244,6 +269,7 @@ fun BookingScreen(
             onPay = { viewModel.processPayment(scope) },
             onBack = { viewModel.goBack() }
         )
+
         BookingStep.PROCESSING -> ProcessingStep()
         BookingStep.RESULT -> ResultStep(
             success = state.paymentSuccess == true,
@@ -344,11 +370,27 @@ private fun DateSelectionStep(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("📦 Package Summary", fontWeight = FontWeight.Bold, color = NavyColor, fontSize = 14.sp)
+                    Text(
+                        "📦 Package Summary",
+                        fontWeight = FontWeight.Bold,
+                        color = NavyColor,
+                        fontSize = 14.sp
+                    )
                     Spacer(Modifier.height(10.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(tourPackage.title, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = NavyColor, modifier = Modifier.weight(1f))
-                        Text("₹${tourPackage.price}/night", fontWeight = FontWeight.Bold, color = SuccessColor, fontSize = 14.sp)
+                        Text(
+                            tourPackage.title,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 16.sp,
+                            color = NavyColor,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            "₹${tourPackage.price}/night",
+                            fontWeight = FontWeight.Bold,
+                            color = SuccessColor,
+                            fontSize = 14.sp
+                        )
                     }
                     Spacer(Modifier.height(4.dp))
                     Text("📍 ${tourPackage.location}", fontSize = 13.sp, color = SlateColor)
@@ -356,10 +398,23 @@ private fun DateSelectionStep(
                 }
             }
 
-            Text("Select Travel Dates", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = NavyColor)
+            Text(
+                "Select Travel Dates",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = NavyColor
+            )
 
-            DatePickerField(label = "Start Date", date = startDate, placeholder = "Tap to select start date", onClick = { showStartPicker = true })
-            DatePickerField(label = "End Date", date = endDate, placeholder = "Tap to select end date", onClick = { showEndPicker = true })
+            DatePickerField(
+                label = "Start Date",
+                date = startDate,
+                placeholder = "Tap to select start date",
+                onClick = { showStartPicker = true })
+            DatePickerField(
+                label = "End Date",
+                date = endDate,
+                placeholder = "Tap to select end date",
+                onClick = { showEndPicker = true })
 
             if (nights > 0) {
                 Surface(
@@ -368,19 +423,38 @@ private fun DateSelectionStep(
                     border = borderStroke(),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Booking Summary", fontWeight = FontWeight.Bold, color = NavyColor, fontSize = 14.sp)
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            "Booking Summary",
+                            fontWeight = FontWeight.Bold,
+                            color = NavyColor,
+                            fontSize = 14.sp
+                        )
                         HorizontalDivider(color = BorderColor)
                         SummaryRow("Duration", "$nights night${if (nights != 1) "s" else ""}")
                         SummaryRow("Price per night", "₹${tourPackage.price}")
                         HorizontalDivider(color = BorderColor)
-                        SummaryRow("Total Amount", "₹$totalAmount", bold = true, isHighlightGreen = true)
+                        SummaryRow(
+                            "Total Amount",
+                            "₹$totalAmount",
+                            bold = true,
+                            isHighlightGreen = true
+                        )
                     }
                 }
             }
 
             errorMessage?.let {
-                Text(it, color = Color.Red, fontSize = 13.sp, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Text(
+                    it,
+                    color = Color.Red,
+                    fontSize = 13.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
             }
 
             Button(
@@ -389,7 +463,12 @@ private fun DateSelectionStep(
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = NavyColor)
             ) {
-                Text("Continue to Payment →", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = Color.White)
+                Text(
+                    "Continue to Payment →",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp,
+                    color = Color.White
+                )
             }
 
             Spacer(Modifier.height(32.dp))
@@ -465,9 +544,22 @@ private fun PaymentStep(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Surface(shape = RoundedCornerShape(12.dp), color = BgColor, border = borderStroke(), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Order Summary", fontWeight = FontWeight.Bold, color = NavyColor, fontSize = 14.sp)
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = BgColor,
+                border = borderStroke(),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        "Order Summary",
+                        fontWeight = FontWeight.Bold,
+                        color = NavyColor,
+                        fontSize = 14.sp
+                    )
                     HorizontalDivider(color = BorderColor)
                     SummaryRow("Package", tourPackage.title)
                     SummaryRow("Start Date", startDate.toString())
@@ -478,9 +570,19 @@ private fun PaymentStep(
                 }
             }
 
-            Text("Payment Details", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = NavyColor)
+            Text(
+                "Payment Details",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = NavyColor
+            )
 
-            Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFFFFFBEB), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFDE68A)), modifier = Modifier.fillMaxWidth()) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = Color(0xFFFFFBEB),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFDE68A)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
                     "🔒 Demo Mode — No real payment is processed",
                     fontSize = 12.sp, color = Color(0xFF92400E),
@@ -488,8 +590,16 @@ private fun PaymentStep(
                 )
             }
 
-            Surface(shape = RoundedCornerShape(12.dp), color = BgColor, border = borderStroke(), modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = BgColor,
+                border = borderStroke(),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
                     OutlinedTextField(
                         value = cardHolderName,
                         onValueChange = { onCardUpdate(it, null, null, null) },
@@ -517,7 +627,8 @@ private fun PaymentStep(
                             value = expiryDate,
                             onValueChange = { raw ->
                                 val digits = raw.filter { it.isDigit() }.take(4)
-                                val formatted = if (digits.length >= 3) "${digits.take(2)}/${digits.drop(2)}" else digits
+                                val formatted =
+                                    if (digits.length >= 3) "${digits.take(2)}/${digits.drop(2)}" else digits
                                 onCardUpdate(null, null, formatted, null)
                             },
                             label = { Text("Expiry", color = SlateColor) },
@@ -545,7 +656,13 @@ private fun PaymentStep(
             }
 
             errorMessage?.let {
-                Text(it, color = Color.Red, fontSize = 13.sp, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Text(
+                    it,
+                    color = Color.Red,
+                    fontSize = 13.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
             }
 
             Button(
@@ -554,7 +671,12 @@ private fun PaymentStep(
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = NavyColor)
             ) {
-                Text("Pay ₹$totalAmount & Confirm Booking", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = Color.White)
+                Text(
+                    "Pay ₹$totalAmount & Confirm Booking",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp,
+                    color = Color.White
+                )
             }
 
             Spacer(Modifier.height(32.dp))
@@ -564,10 +686,25 @@ private fun PaymentStep(
 
 @Composable
 private fun ProcessingStep() {
-    Box(modifier = Modifier.fillMaxSize().background(LightBgColor), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
-            CircularProgressIndicator(color = SkyColor, strokeWidth = 3.dp, modifier = Modifier.size(56.dp))
-            Text("Processing Payment...", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = NavyColor)
+    Box(
+        modifier = Modifier.fillMaxSize().background(LightBgColor),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            CircularProgressIndicator(
+                color = SkyColor,
+                strokeWidth = 3.dp,
+                modifier = Modifier.size(56.dp)
+            )
+            Text(
+                "Processing Payment...",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 18.sp,
+                color = NavyColor
+            )
             Text("Please do not close this screen", fontSize = 13.sp, color = SlateColor)
         }
     }
@@ -575,8 +712,16 @@ private fun ProcessingStep() {
 
 @Composable
 private fun ResultStep(success: Boolean, onSuccessAction: () -> Unit, onFailedAction: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize().background(LightBgColor), contentAlignment = Alignment.Center) {
-        Surface(shape = RoundedCornerShape(20.dp), color = BgColor, border = borderStroke(), modifier = Modifier.padding(32.dp).fillMaxWidth()) {
+    Box(
+        modifier = Modifier.fillMaxSize().background(LightBgColor),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = BgColor,
+            border = borderStroke(),
+            modifier = Modifier.padding(32.dp).fillMaxWidth()
+        ) {
             Column(
                 modifier = Modifier.padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -592,7 +737,10 @@ private fun ResultStep(success: Boolean, onSuccessAction: () -> Unit, onFailedAc
                 Text(
                     if (success) "Your booking has been saved. You can track it in My Bookings."
                     else "Your payment could not be processed. The failed attempt has been recorded in Transactions.",
-                    fontSize = 14.sp, color = SlateColor, textAlign = TextAlign.Center, lineHeight = 20.sp
+                    fontSize = 14.sp,
+                    color = SlateColor,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 20.sp
                 )
                 Spacer(Modifier.height(8.dp))
                 Button(
@@ -604,7 +752,10 @@ private fun ResultStep(success: Boolean, onSuccessAction: () -> Unit, onFailedAc
                         contentColor = Color.White
                     )
                 ) {
-                    Text(if (success) "View My Bookings" else "View Transactions", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        if (success) "View My Bookings" else "View Transactions",
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }
@@ -626,17 +777,37 @@ private fun SimpleDatePickerDialog(
     if (selectedDay > daysInMonth) selectedDay = daysInMonth
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = RoundedCornerShape(16.dp), color = BgColor, modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = BgColor,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = NavyColor)
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     TextButton(onClick = {
-                        if (selectedMonth == 1) { selectedMonth = 12; selectedYear-- } else selectedMonth--
+                        if (selectedMonth == 1) {
+                            selectedMonth = 12; selectedYear--
+                        } else selectedMonth--
                     }) { Text("‹", fontSize = 20.sp, color = NavyColor) }
-                    Text("${monthName(selectedMonth)} $selectedYear", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = NavyColor)
+                    Text(
+                        "${monthName(selectedMonth)} $selectedYear",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        color = NavyColor
+                    )
                     TextButton(onClick = {
-                        if (selectedMonth == 12) { selectedMonth = 1; selectedYear++ } else selectedMonth++
+                        if (selectedMonth == 12) {
+                            selectedMonth = 1; selectedYear++
+                        } else selectedMonth++
                     }) { Text("›", fontSize = 20.sp, color = NavyColor) }
                 }
 
@@ -644,13 +815,25 @@ private fun SimpleDatePickerDialog(
                 val weeks = ((daysInMonth + firstDayOffset + 6) / 7)
 
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
                         listOf("S", "M", "T", "W", "T", "F", "S").forEach { day ->
-                            Text(day, fontSize = 11.sp, color = SlateColor, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                            Text(
+                                day,
+                                fontSize = 11.sp,
+                                color = SlateColor,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
                     for (week in 0 until weeks) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
                             for (dow in 0 until 7) {
                                 val dayNum = week * 7 + dow - firstDayOffset + 1
                                 if (dayNum < 1 || dayNum > daysInMonth) {
@@ -662,11 +845,19 @@ private fun SimpleDatePickerDialog(
                                             .weight(1f)
                                             .aspectRatio(1f)
                                             .padding(2.dp)
-                                            .background(if (isSelected) NavyColor else Color.Transparent, RoundedCornerShape(50))
+                                            .background(
+                                                if (isSelected) NavyColor else Color.Transparent,
+                                                RoundedCornerShape(50)
+                                            )
                                             .clickable { selectedDay = dayNum },
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text("$dayNum", fontSize = 13.sp, color = if (isSelected) Color.White else NavyColor, textAlign = TextAlign.Center)
+                                        Text(
+                                            "$dayNum",
+                                            fontSize = 13.sp,
+                                            color = if (isSelected) Color.White else NavyColor,
+                                            textAlign = TextAlign.Center
+                                        )
                                     }
                                 }
                             }
@@ -674,10 +865,21 @@ private fun SimpleDatePickerDialog(
                     }
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.align(Alignment.End)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.align(Alignment.End)
+                ) {
                     TextButton(onClick = onDismiss) { Text("Cancel", color = SlateColor) }
                     Button(
-                        onClick = { onDateSelected(LocalDate(selectedYear, selectedMonth, selectedDay)) },
+                        onClick = {
+                            onDateSelected(
+                                LocalDate(
+                                    selectedYear,
+                                    selectedMonth,
+                                    selectedDay
+                                )
+                            )
+                        },
                         colors = ButtonDefaults.buttonColors(containerColor = NavyColor),
                         shape = RoundedCornerShape(8.dp)
                     ) { Text("Select", color = Color.White) }
@@ -688,7 +890,12 @@ private fun SimpleDatePickerDialog(
 }
 
 @Composable
-private fun DatePickerField(label: String, date: LocalDate?, placeholder: String, onClick: () -> Unit) {
+private fun DatePickerField(
+    label: String,
+    date: LocalDate?,
+    placeholder: String,
+    onClick: () -> Unit
+) {
     Column {
         Text(label, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = SlateColor)
         Spacer(Modifier.height(4.dp))
@@ -713,7 +920,12 @@ private fun DatePickerField(label: String, date: LocalDate?, placeholder: String
 }
 
 @Composable
-private fun SummaryRow(label: String, value: String, bold: Boolean = false, isHighlightGreen: Boolean = false) {
+private fun SummaryRow(
+    label: String,
+    value: String,
+    bold: Boolean = false,
+    isHighlightGreen: Boolean = false
+) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, fontSize = 13.sp, color = SlateColor)
         Text(
@@ -726,7 +938,8 @@ private fun SummaryRow(label: String, value: String, bold: Boolean = false, isHi
 }
 
 @Composable
-private fun borderStroke() = androidx.compose.foundation.BorderStroke(1.dp, BorderColor.copy(alpha = 0.5f))
+private fun borderStroke() =
+    androidx.compose.foundation.BorderStroke(1.dp, BorderColor.copy(alpha = 0.5f))
 
 private fun formatCardNumber(digits: String): String = digits.chunked(4).joinToString(" ")
 
@@ -748,4 +961,17 @@ private fun firstDayOfWeek(year: Int, month: Int): Int {
     return ((h + 5) % 7)
 }
 
-private fun monthName(month: Int) = listOf("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")[month - 1]
+private fun monthName(month: Int) = listOf(
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec"
+)[month - 1]
