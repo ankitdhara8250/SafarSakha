@@ -1,6 +1,7 @@
 package com.safarsakha.presentation.screens.profile.tours.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +20,16 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import com.safarsakha.domain.model.TourPackage
 
+// ── Premium Design Tokens ────────────────────────────────────────────────────
+private val NavyColor = Color(0xFF0F172A)
+private val SkyColor = Color(0xFF0EA5E9)
+private val SlateColor = Color(0xFF64748B)
+private val BorderColor = Color(0xFFE2E8F0)
+private val BgColor = Color(0xFFFFFFFF)
+private val ErrorColor = Color(0xFFDC2626)
+private val SuccessColor = Color(0xFF16A34A)
+private val SuccessBgColor = Color(0xFFF0FDF4)
+
 @Composable
 fun UserTourCard(
     tourPackage: TourPackage,
@@ -27,17 +38,24 @@ fun UserTourCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clip(RoundedCornerShape(16.dp))
+            .clickable { onClick() }
+            .border(
+                width = 1.dp,
+                color = BorderColor.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(16.dp)
+            ),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp), // Zero out raw shadow for premium flat border style
+        colors = CardDefaults.cardColors(containerColor = BgColor)
     ) {
         Column {
+            // Image & Price Banner Section
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp)
-                    .background(Color(0xFFE2E8F0)),
+                    .background(BorderColor.copy(alpha = 0.4f)),
                 contentAlignment = Alignment.Center
             ) {
                 if (!tourPackage.imageUrl.isNullOrEmpty()) {
@@ -58,68 +76,72 @@ fun UserTourCard(
                     if (isLoading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(32.dp),
-                            color = Color(0xFF1E3A8A),
-                            strokeWidth = 2.dp
+                            color = SkyColor,
+                            strokeWidth = 2.5.dp
                         )
                     }
 
                     if (isError) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("⚠️", fontSize = 24.sp)
-                            Text("Load Failed", color = Color.Red, fontSize = 10.sp)
+                            Text("Load Failed", color = ErrorColor, fontSize = 10.sp)
                         }
                     }
                 } else {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("📷", fontSize = 32.sp)
-                        Text("No Image", color = Color(0xFF94A3B8), fontSize = 12.sp)
+                        Text("No Image Available", color = SlateColor.copy(alpha = 0.6f), fontSize = 12.sp)
                     }
                 }
 
+                // Green Highlighted Amount Badge
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(12.dp),
                     shape = RoundedCornerShape(8.dp),
-                    color = Color(0xFF1E3A8A)
+                    color = SuccessBgColor
                 ) {
                     Text(
                         text = "₹${tourPackage.price}",
-                        color = Color.White,
+                        color = SuccessColor,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
                 }
             }
 
+            // Descriptive Information Content Section
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(
                     text = tourPackage.title,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0F172A),
+                    color = NavyColor,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    letterSpacing = (-0.3f).sp
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Location & Duration Metadata Row
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "📍", fontSize = 14.sp)
+                    Text(text = "📍", fontSize = 13.sp)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = tourPackage.location,
                         fontSize = 13.sp,
-                        color = Color(0xFF64748B)
+                        color = SlateColor
                     )
                     Spacer(modifier = Modifier.width(16.dp))
-                    Text(text = "⏱️", fontSize = 14.sp)
+                    Text(text = "⏱️", fontSize = 13.sp)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = tourPackage.duration,
                         fontSize = 13.sp,
-                        color = Color(0xFF64748B)
+                        color = SlateColor
                     )
                 }
 
@@ -128,17 +150,19 @@ fun UserTourCard(
                 Text(
                     text = tourPackage.description,
                     fontSize = 13.sp,
-                    color = Color(0xFF475569),
+                    color = NavyColor.copy(alpha = 0.75f),
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                HorizontalDivider(color = Color(0xFFF1F5F9))
+                HorizontalDivider(color = BorderColor.copy(alpha = 0.5f))
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
+                // Interactive Call To Action Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
@@ -146,14 +170,14 @@ fun UserTourCard(
                 ) {
                     Text(
                         text = "View Details",
-                        color = Color(0xFF1E3A8A),
+                        color = SkyColor,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "→",
-                        color = Color(0xFF1E3A8A),
+                        color = SkyColor,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp
                     )

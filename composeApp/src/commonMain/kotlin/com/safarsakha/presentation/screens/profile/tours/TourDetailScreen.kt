@@ -1,42 +1,18 @@
 package com.safarsakha.presentation.screens.profile.tours
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -57,6 +33,17 @@ import com.safarsakha.domain.usecase.tourpackage.GetTourPackageByIdUseCase
 import kotlinx.coroutines.flow.collectLatest
 import kotlin.reflect.KClass
 
+// ── Premium Design Tokens ────────────────────────────────────────────────────
+private val NavyColor = Color(0xFF0F172A)
+private val SkyColor = Color(0xFF0EA5E9)
+private val SlateColor = Color(0xFF64748B)
+private val BorderColor = Color(0xFFE2E8F0)
+private val BgColor = Color(0xFFFFFFFF)
+private val LightBgColor = Color(0xFFF8FAFC)
+private val ErrorColor = Color(0xFFDC2626)
+private val SuccessColor = Color(0xFF16A34A)
+private val SuccessBgColor = Color(0xFFF0FDF4)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TourDetailScreen(
@@ -69,10 +56,12 @@ fun TourDetailScreen(
     val getTourPackageByIdUseCase = remember { GetTourPackageByIdUseCase(repository) }
 
     val viewModel: TourDetailViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
-                @Suppress("UNCHECKED_CAST")
-                return TourDetailViewModel(getTourPackageByIdUseCase, enquiryRepository) as T
+        factory = remember(getTourPackageByIdUseCase, enquiryRepository) {
+            object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
+                    @Suppress("UNCHECKED_CAST")
+                    return TourDetailViewModel(getTourPackageByIdUseCase, enquiryRepository) as T
+                }
             }
         }
     )
@@ -103,62 +92,77 @@ fun TourDetailScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "Tour Details",
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E3A8A)
-                    )
+                    Column {
+                        Text(
+                            text = "Tour Details",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyColor,
+                            letterSpacing = (-0.3f).sp
+                        )
+                        uiState.tourPackage?.let {
+                            Text(
+                                text = it.location,
+                                fontSize = 12.sp,
+                                color = SlateColor
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
-                    TextButton(onClick = onNavigateBack) {
-                        Text("Back", color = Color(0xFF1E3A8A))
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Go back",
+                            tint = NavyColor
+                        )
                     }
                 },
                 actions = {
-                    // Send Enquiry button in TopAppBar
                     Button(
-                        onClick = {
-                            viewModel.handleEvent(TourDetailEvent.OpenEnquiryDialog)
-                        },
+                        onClick = { viewModel.handleEvent(TourDetailEvent.OpenEnquiryDialog) },
                         enabled = !uiState.isSubmittingEnquiry,
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier
-                            .padding(end = 8.dp)
-                            .height(36.dp),
+                            .padding(end = 12.dp)
+                            .height(38.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1E3A8A),
-                            disabledContainerColor = Color(0xFF94A3B8)
+                            containerColor = SkyColor,
+                            disabledContainerColor = BorderColor
                         ),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 16.dp,
-                            vertical = 4.dp
-                        )
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
                     ) {
                         if (uiState.isSubmittingEnquiry) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(14.dp),
+                                modifier = Modifier.size(16.dp),
                                 color = Color.White,
                                 strokeWidth = 2.dp
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Sending...",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 color = Color.White
                             )
                         } else {
                             Text(
                                 text = "Send Enquiry",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 color = Color.White
                             )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = BgColor,
+                    scrolledContainerColor = BgColor
+                ),
+                modifier = Modifier.border(
+                    width = 1.dp,
+                    color = BorderColor.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(0.dp)
                 )
             )
         }
@@ -166,30 +170,58 @@ fun TourDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F7FB))
+                .background(LightBgColor)
                 .padding(paddingValues)
         ) {
             when {
                 uiState.isLoading -> {
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center),
-                        color = Color(0xFF1E3A8A)
+                        color = SkyColor,
+                        strokeWidth = 3.dp
                     )
                 }
 
                 uiState.errorMessage != null -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center).padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(24.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text("❌ Error loading tour", fontSize = 18.sp, color = Color.Red, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(uiState.errorMessage ?: "Unknown error", fontSize = 14.sp, color = Color.Gray, textAlign = TextAlign.Center)
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Button(
-                            onClick = { viewModel.handleEvent(TourDetailEvent.Retry) },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
-                        ) { Text("Retry") }
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(ErrorColor.copy(alpha = 0.08f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("⚠️", fontSize = 24.sp)
+                            }
+                            Text(
+                                text = "Couldn't load details",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = NavyColor,
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                text = uiState.errorMessage ?: "Unknown error occurred",
+                                fontSize = 13.sp,
+                                color = SlateColor,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Button(
+                                onClick = { viewModel.handleEvent(TourDetailEvent.Retry) },
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = NavyColor)
+                            ) {
+                                Text("Retry", color = Color.White, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
                     }
                 }
 
@@ -201,12 +233,12 @@ fun TourDetailScreen(
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
                     ) {
-                        // Cover image
+                        // Cover image section
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(240.dp)
-                                .background(Color(0xFFE2E8F0)),
+                                .height(260.dp)
+                                .background(BorderColor.copy(alpha = 0.4f)),
                             contentAlignment = Alignment.Center
                         ) {
                             if (!tourPackage.imageUrl.isNullOrEmpty()) {
@@ -223,20 +255,25 @@ fun TourDetailScreen(
                                         isError = state is AsyncImagePainter.State.Error
                                     }
                                 )
-                                if (isLoading) CircularProgressIndicator(modifier = Modifier.size(36.dp), color = Color(0xFF1E3A8A))
-                                if (isError) Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("⚠️", fontSize = 28.sp)
-                                    Text("Image failed to load", color = Color.Red, fontSize = 12.sp)
+                                if (isLoading) {
+                                    CircularProgressIndicator(modifier = Modifier.size(36.dp), color = SkyColor)
+                                }
+                                if (isError) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text("⚠️", fontSize = 28.sp)
+                                        Text("Image failed to load", color = ErrorColor, fontSize = 12.sp)
+                                    }
                                 }
                             } else {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("📷", fontSize = 40.sp)
-                                    Text("No Image", color = Color(0xFF94A3B8), fontSize = 13.sp)
+                                    Text("No Image Available", color = SlateColor, fontSize = 13.sp)
                                 }
                             }
                         }
 
-                        Column(modifier = Modifier.padding(20.dp)) {
+                        // Details Core Container
+                        Column(modifier = Modifier.padding(24.dp)) {
                             // Title + Price
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -247,91 +284,102 @@ fun TourDetailScreen(
                                     text = tourPackage.title,
                                     fontSize = 24.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF0F172A),
-                                    modifier = Modifier.weight(1f)
+                                    color = NavyColor,
+                                    modifier = Modifier.weight(1f),
+                                    letterSpacing = (-0.5f).sp
                                 )
-                                Spacer(modifier = Modifier.width(12.dp))
+                                Spacer(modifier = Modifier.width(16.dp))
                                 Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = Color(0xFF1E3A8A)
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = SuccessBgColor
                                 ) {
                                     Text(
                                         text = "₹${tourPackage.price}",
-                                        color = Color.White,
-                                        fontSize = 16.sp,
+                                        color = SuccessColor,
+                                        fontSize = 18.sp,
                                         fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                                     )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
+                            // Horizontal metadata elements
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("📍", fontSize = 16.sp)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(tourPackage.location, fontSize = 14.sp, color = Color(0xFF64748B))
-                                Spacer(modifier = Modifier.width(20.dp))
-                                Text("⏱️", fontSize = 16.sp)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(tourPackage.duration, fontSize = 14.sp, color = Color(0xFF64748B))
+                                Text("📍", fontSize = 14.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(tourPackage.location, fontSize = 14.sp, color = SlateColor)
+                                Spacer(modifier = Modifier.width(24.dp))
+                                Text("⏱️", fontSize = 14.sp)
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(tourPackage.duration, fontSize = 14.sp, color = SlateColor)
                             }
 
-                            Spacer(modifier = Modifier.height(20.dp))
-                            HorizontalDivider(color = Color(0xFFE2E8F0))
-                            Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(24.dp))
+                            HorizontalDivider(color = BorderColor.copy(alpha = 0.6f))
+                            Spacer(modifier = Modifier.height(24.dp))
 
-                            Text("About this tour", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(tourPackage.description, fontSize = 14.sp, color = Color(0xFF475569), lineHeight = 20.sp)
+                            // Description Section
+                            Text("About this tour", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyColor)
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = tourPackage.description,
+                                fontSize = 14.sp,
+                                color = NavyColor.copy(alpha = 0.8f),
+                                lineHeight = 22.sp
+                            )
 
-                            Spacer(modifier = Modifier.height(20.dp))
-                            HorizontalDivider(color = Color(0xFFE2E8F0))
-                            Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(24.dp))
+                            HorizontalDivider(color = BorderColor.copy(alpha = 0.6f))
+                            Spacer(modifier = Modifier.height(24.dp))
 
-                            Text("What's Included", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF0F172A))
-                            Spacer(modifier = Modifier.height(12.dp))
+                            // What's Included Section
+                            Text("What's Included", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = NavyColor)
+                            Spacer(modifier = Modifier.height(14.dp))
 
                             if (tourPackage.includedServices.isEmpty()) {
-                                Text("No included services listed for this package.", fontSize = 13.sp, color = Color(0xFF94A3B8))
+                                Text("No included services listed for this package.", fontSize = 13.sp, color = SlateColor)
                             } else {
-                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                     tourPackage.includedServices.forEach { service ->
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Surface(shape = RoundedCornerShape(50), color = Color(0xFFE0ECFF)) {
-                                                Text("✓", color = Color(0xFF1E3A8A), fontWeight = FontWeight.Bold, fontSize = 13.sp, modifier = Modifier.padding(6.dp))
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .clip(RoundedCornerShape(50))
+                                                    .background(SuccessBgColor),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text("✓", color = SuccessColor, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                             }
-                                            Spacer(modifier = Modifier.width(10.dp))
-                                            Text(service, fontSize = 14.sp, color = Color(0xFF334155))
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(service, fontSize = 14.sp, color = NavyColor.copy(alpha = 0.9f))
                                         }
                                     }
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(28.dp))
-                            HorizontalDivider(color = Color(0xFFE2E8F0))
-                            Spacer(modifier = Modifier.height(20.dp))
+                            Spacer(modifier = Modifier.height(32.dp))
+                            HorizontalDivider(color = BorderColor.copy(alpha = 0.6f))
+                            Spacer(modifier = Modifier.height(24.dp))
 
-                            // Book Now Button
+                            // Action Booking Button
                             Button(
-                                onClick = {
-                                    onBookNow?.invoke(tourPackage)
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF1E3A8A)
-                                ),
-                                shape = RoundedCornerShape(12.dp)
+                                onClick = { onBookNow?.invoke(tourPackage) },
+                                modifier = Modifier.fillMaxWidth().height(50.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = NavyColor),
+                                shape = RoundedCornerShape(14.dp)
                             ) {
                                 Text(
                                     text = "Book Now",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    modifier = Modifier.padding(vertical = 4.dp)
+                                    color = Color.White
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(32.dp))
+                            Spacer(modifier = Modifier.height(24.dp))
                         }
                     }
                 }

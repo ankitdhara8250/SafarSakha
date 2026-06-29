@@ -1,31 +1,26 @@
 package com.safarsakha.presentation.screens.profile.tours
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+
+// ── Premium Design Tokens ────────────────────────────────────────────────────
+private val NavyColor = Color(0xFF0F172A)
+private val SkyColor = Color(0xFF0EA5E9)
+private val SlateColor = Color(0xFF64748B)
+private val BorderColor = Color(0xFFE2E8F0)
+private val BgColor = Color(0xFFFFFFFF)
+private val ErrorColor = Color(0xFFDC2626)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,25 +34,30 @@ fun EnquiryDialog(
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = BgColor),
+            elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+            ) {
                 Text(
                     text = "Your Enquiry",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E3A8A)
+                    color = NavyColor,
+                    letterSpacing = (-0.3f).sp
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
                     text = tourName,
                     fontSize = 13.sp,
-                    color = Color(0xFF64748B)
+                    color = SlateColor,
+                    lineHeight = 18.sp
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -70,36 +70,59 @@ fun EnquiryDialog(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(160.dp),
+                        .height(150.dp),
                     placeholder = {
                         Text(
                             text = "e.g. Is food included? What is the hotel category?",
                             fontSize = 13.sp,
-                            color = Color(0xFF94A3B8)
+                            color = SlateColor.copy(alpha = 0.6f),
+                            lineHeight = 18.sp
                         )
                     },
                     maxLines = 6,
                     isError = showError,
-                    supportingText = if (showError) {
-                        { Text("Please enter your enquiry message.", color = Color.Red, fontSize = 12.sp) }
-                    } else null,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF1E3A8A),
-                        unfocusedBorderColor = Color(0xFFE2E8F0),
-                        cursorColor = Color(0xFF1E3A8A)
+                        focusedBorderColor = SkyColor,
+                        unfocusedBorderColor = BorderColor,
+                        cursorColor = SkyColor,
+                        errorBorderColor = ErrorColor,
+                        focusedTextColor = NavyColor,
+                        unfocusedTextColor = NavyColor
                     ),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(12.dp)
                 )
 
-                Text(
-                    text = "${message.length} characters",
-                    fontSize = 11.sp,
-                    color = Color(0xFF94A3B8),
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+                Spacer(modifier = Modifier.height(6.dp))
 
-                Spacer(modifier = Modifier.height(20.dp))
+                // Bottom Meta Row for Field Metadata & Count
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (showError) {
+                            Text(
+                                text = "Please enter your enquiry message.",
+                                color = ErrorColor,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
 
+                    Text(
+                        text = "${message.length} characters",
+                        fontSize = 11.sp,
+                        color = SlateColor.copy(alpha = 0.8f),
+                        textAlign = TextAlign.End,
+                        modifier = Modifier.padding(start = 8.0.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Primary Action Button
                 Button(
                     onClick = {
                         if (message.isBlank()) {
@@ -108,20 +131,38 @@ fun EnquiryDialog(
                             onSend(message.trim())
                         }
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A)),
-                    shape = RoundedCornerShape(10.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = NavyColor,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text("Send Enquiry", fontWeight = FontWeight.SemiBold)
+                    Text(
+                        text = "Send Enquiry",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
+                // Secondary Cancel Button
                 TextButton(
                     onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp),
+                    shape = RoundedCornerShape(14.dp)
                 ) {
-                    Text("Cancel", color = Color(0xFF64748B))
+                    Text(
+                        text = "Cancel",
+                        color = SlateColor,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }

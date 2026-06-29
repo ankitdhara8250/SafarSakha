@@ -1,6 +1,7 @@
 package com.safarsakha.presentation.screens.profile.registration
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -21,21 +23,36 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+// ── Premium Design Tokens ────────────────────────────────────────────────────
+private val NavyColor = Color(0xFF0F172A)
+private val SkyColor = Color(0xFF0EA5E9)
+private val SlateColor = Color(0xFF64748B)
+private val BorderColor = Color(0xFFE2E8F0)
+private val BgColor = Color(0xFFFFFFFF)
+private val LightBgColor = Color(0xFFF8FAFC)
+private val ErrorColor = Color(0xFFDC2626)
+private val ErrorBgColor = Color(0xFFFEF2F2)
 
 @Composable
 fun UserRegisterScreen(
@@ -63,19 +80,19 @@ fun UserRegisterScreen(
 
     Surface(
         modifier = modifier.fillMaxSize(),
-        color = Color(0xFFF5F7FB)
+        color = LightBgColor
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F7FB))
-                .padding(24.dp),
+                .padding(horizontal = 24.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState())
+                    .padding(vertical = 32.dp),
                 verticalArrangement = Arrangement.Center
             ) {
 
@@ -86,107 +103,140 @@ fun UserRegisterScreen(
                     Spacer(modifier = Modifier.weight(1f))
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
                 Text(
                     text = "Create Account",
-                    fontSize = 28.sp,
+                    fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E3A8A)
+                    color = NavyColor,
+                    letterSpacing = (-0.5f).sp
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
                     text = "Join us and start your journey",
                     fontSize = 15.sp,
-                    color = Color.Gray
+                    color = SlateColor,
+                    fontWeight = FontWeight.Medium
                 )
 
-                Spacer(modifier = Modifier.height(30.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(8.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White
-                    )
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(
+                            elevation = 2.dp,
+                            shape = RoundedCornerShape(24.dp),
+                            ambientColor = NavyColor.copy(alpha = 0.04f),
+                            spotColor = NavyColor.copy(alpha = 0.08f)
+                        )
+                        .shadow(
+                            elevation = 12.dp,
+                            shape = RoundedCornerShape(24.dp),
+                            ambientColor = NavyColor.copy(alpha = 0.02f),
+                            spotColor = NavyColor.copy(alpha = 0.04f)
+                        ),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = BgColor)
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(
+                                width = 1.dp,
+                                color = BorderColor.copy(alpha = 0.60f),
+                                shape = RoundedCornerShape(24.dp)
+                            )
+                            .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
 
                         Text(
                             text = "Register",
-                            fontSize = 24.sp,
+                            fontSize = 22.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E3A8A)
+                            color = NavyColor,
+                            letterSpacing = (-0.2f).sp
                         )
 
                         Spacer(modifier = Modifier.height(24.dp))
 
+                        // Custom styling map shared across premium text inputs
+                        val textFieldColors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = SkyColor,
+                            unfocusedBorderColor = BorderColor,
+                            disabledBorderColor = BorderColor.copy(alpha = 0.5f),
+                            focusedLabelColor = SkyColor,
+                            unfocusedLabelColor = SlateColor,
+                            focusedContainerColor = LightBgColor.copy(alpha = 0.5f),
+                            unfocusedContainerColor = LightBgColor.copy(alpha = 0.5f)
+                        )
+
                         OutlinedTextField(
                             value = uiState.name,
                             onValueChange = { viewModel.onEvent(UserRegisterEvent.OnNameChanged(it)) },
-                            label = { Text("Full Name") },
+                            label = { Text("Full Name", fontWeight = FontWeight.Medium) },
                             placeholder = { Text("John Doe") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             enabled = !uiState.isLoading,
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = textFieldColors,
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Text,
                                 imeAction = ImeAction.Next
                             )
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         OutlinedTextField(
                             value = uiState.email,
                             onValueChange = { viewModel.onEvent(UserRegisterEvent.OnEmailChanged(it)) },
-                            label = { Text("Email") },
+                            label = { Text("Email Address", fontWeight = FontWeight.Medium) },
                             placeholder = { Text("user@example.com") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             enabled = !uiState.isLoading,
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = textFieldColors,
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Email,
                                 imeAction = ImeAction.Next
                             )
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         OutlinedTextField(
                             value = uiState.phoneNumber,
                             onValueChange = { viewModel.onEvent(UserRegisterEvent.OnPhoneNumberChanged(it)) },
-                            label = { Text("Phone Number") },
+                            label = { Text("Phone Number", fontWeight = FontWeight.Medium) },
                             placeholder = { Text("+1234567890") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             enabled = !uiState.isLoading,
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = textFieldColors,
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Phone,
                                 imeAction = ImeAction.Next
                             )
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         OutlinedTextField(
                             value = uiState.password,
                             onValueChange = { viewModel.onEvent(UserRegisterEvent.OnPasswordChanged(it)) },
-                            label = { Text("Password") },
+                            label = { Text("Password", fontWeight = FontWeight.Medium) },
                             placeholder = { Text("Minimum 6 characters") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             enabled = !uiState.isLoading,
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = textFieldColors,
                             visualTransformation = PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Password,
@@ -194,17 +244,18 @@ fun UserRegisterScreen(
                             )
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         OutlinedTextField(
                             value = uiState.confirmPassword,
                             onValueChange = { viewModel.onEvent(UserRegisterEvent.OnConfirmPasswordChanged(it)) },
-                            label = { Text("Confirm Password") },
+                            label = { Text("Confirm Password", fontWeight = FontWeight.Medium) },
                             placeholder = { Text("Re-enter your password") },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             enabled = !uiState.isLoading,
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = textFieldColors,
                             visualTransformation = PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Password,
@@ -215,22 +266,19 @@ fun UserRegisterScreen(
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Button(
-                            onClick = {
-                                viewModel.onEvent(UserRegisterEvent.OnRegisterClick)
-                            },
+                            onClick = { viewModel.onEvent(UserRegisterEvent.OnRegisterClick) },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp),
+                                .height(48.dp),
                             enabled = !uiState.isLoading,
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF1E3A8A)
-                            )
+                            colors = ButtonDefaults.buttonColors(containerColor = NavyColor),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                         ) {
                             if (uiState.isLoading) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(22.dp),
-                                    strokeWidth = 2.dp,
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.5.dp,
                                     color = Color.White
                                 )
                             } else {
@@ -238,45 +286,60 @@ fun UserRegisterScreen(
                                     text = "Register",
                                     color = Color.White,
                                     fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
 
-                        // Show error message if present
+                        // Premium UI error alert block design
                         if (uiState.error != null) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = uiState.error!!,
-                                color = Color.Red,
-                                fontSize = 12.sp
-                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(ErrorColor.copy(alpha = 0.06f))
+                                    .border(1.dp, ErrorColor.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("⚠️ ", fontSize = 12.sp)
+                                    Text(
+                                        text = uiState.error!!,
+                                        color = ErrorColor,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
                         }
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
                         Text(
                             text = "Already have an account?",
-                            fontSize = 14.sp,
-                            color = Color.Gray
+                            fontSize = 13.sp,
+                            color = SlateColor,
+                            fontWeight = FontWeight.Medium
                         )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
 
-                        Button(
+                        TextButton(
                             onClick = onBackToLogin,
                             modifier = Modifier.fillMaxWidth(),
-                            enabled = !uiState.isLoading,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Transparent,
-                                contentColor = Color(0xFF1E3A8A)
-                            ),
-                            elevation = null
+                            enabled = !uiState.isLoading
                         ) {
                             Text(
                                 text = "Back to Login",
-                                color = Color(0xFF1E3A8A),
-                                fontWeight = FontWeight.SemiBold
+                                color = SkyColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp
                             )
                         }
                     }

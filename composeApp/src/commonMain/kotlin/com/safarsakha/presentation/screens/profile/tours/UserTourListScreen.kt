@@ -1,13 +1,16 @@
 package com.safarsakha.presentation.screens.profile.tours
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -21,26 +24,36 @@ import com.safarsakha.data.remote.firebase.FirebaseTourPackageDataSource
 import com.safarsakha.data.repository.impl.TourPackageRepositoryImpl
 import com.safarsakha.domain.usecase.tourpackage.GetActiveTourPackagesUseCase
 import com.safarsakha.presentation.screens.profile.profiledashboard.components.HamburgerMenuButton
-import com.safarsakha.presentation.screens.profile.tours.components.EmptyToursState
 import com.safarsakha.presentation.screens.profile.tours.components.UserTourCard
 import kotlin.reflect.KClass
+
+// ── Premium Design Tokens ────────────────────────────────────────────────────
+private val NavyColor = Color(0xFF0F172A)
+private val SkyColor = Color(0xFF0EA5E9)
+private val SlateColor = Color(0xFF64748B)
+private val BorderColor = Color(0xFFE2E8F0)
+private val BgColor = Color(0xFFFFFFFF)
+private val LightBgColor = Color(0xFFF8FAFC)
+private val ErrorColor = Color(0xFFDC2626)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserTourListScreen(
     onTourClick: (String) -> Unit,
-    onMenuClick: () -> Unit = {}          // ← added
+    onMenuClick: () -> Unit = {}
 ) {
-    val repository = remember {
-        TourPackageRepositoryImpl(FirebaseTourPackageDataSource())
-    }
+    val repository = remember { TourPackageRepositoryImpl(FirebaseTourPackageDataSource()) }
     val getActiveTourPackagesUseCase = remember { GetActiveTourPackagesUseCase(repository) }
 
+    // FIX: Encapsulated inside remember {} to guarantee factory references remain stable
+    // across target architectural recompositions, preventing flow restarts.
     val viewModel: UserTourListViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
-                @Suppress("UNCHECKED_CAST")
-                return UserTourListViewModel(getActiveTourPackagesUseCase) as T
+        factory = remember(getActiveTourPackagesUseCase) {
+            object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
+                    @Suppress("UNCHECKED_CAST")
+                    return UserTourListViewModel(getActiveTourPackagesUseCase) as T
+                }
             }
         }
     )
@@ -51,16 +64,30 @@ fun UserTourListScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "Explore Tours",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E3A8A)
-                    )
+                    Column {
+                        Text(
+                            text = "Explore Tours",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyColor,
+                            letterSpacing = (-0.3f).sp
+                        )
+                        Text(
+                            text = "Discover your next adventure",
+                            fontSize = 12.sp,
+                            color = SlateColor
+                        )
+                    }
                 },
-                navigationIcon = { HamburgerMenuButton(onClick = onMenuClick) },  // ← added
+                navigationIcon = { HamburgerMenuButton(onClick = onMenuClick) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White
+                    containerColor = BgColor,
+                    scrolledContainerColor = BgColor
+                ),
+                modifier = Modifier.border(
+                    width = 1.dp,
+                    color = BorderColor.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(0.dp)
                 )
             )
         }
@@ -68,21 +95,24 @@ fun UserTourListScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F7FB))
+                .background(LightBgColor)
                 .padding(paddingValues)
         ) {
             when (val state = uiState) {
                 is UserTourListUiState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFF1E3A8A))
+                        CircularProgressIndicator(
+                            color = SkyColor,
+                            strokeWidth = 3.dp
+                        )
                     }
                 }
 
                 is UserTourListUiState.Success -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(
                             items = state.packages,
@@ -97,34 +127,81 @@ fun UserTourListScreen(
                 }
 
                 is UserTourListUiState.Empty -> {
-                    EmptyToursState()
+                    // Upgraded Empty State to match the premium template pattern
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(SkyColor.copy(alpha = 0.08f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("🌍", fontSize = 28.sp)
+                        }
+                        Text(
+                            text = "No Tours Available",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = NavyColor
+                        )
+                        Text(
+                            text = "Check back later for exciting new travel packages.",
+                            fontSize = 13.sp,
+                            color = SlateColor.copy(alpha = 0.7f),
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
 
                 is UserTourListUiState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    // Upgraded Error State to match the premium template pattern
+                    Box(
+                        modifier = Modifier.fillMaxSize().padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(24.dp)
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(RoundedCornerShape(50))
+                                    .background(ErrorColor.copy(alpha = 0.08f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("⚠️", fontSize = 24.sp)
+                            }
                             Text(
-                                text = "❌ Error loading tours",
-                                fontSize = 18.sp,
-                                color = Color.Red,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = state.message,
-                                fontSize = 14.sp,
-                                color = Color.Gray,
+                                text = "Couldn't load tours",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = NavyColor,
                                 textAlign = TextAlign.Center
                             )
-                            Spacer(modifier = Modifier.height(24.dp))
+                            Text(
+                                text = state.message,
+                                fontSize = 13.sp,
+                                color = SlateColor,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
                             Button(
                                 onClick = { viewModel.handleEvent(UserTourListEvent.RefreshPackages) },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = NavyColor)
                             ) {
-                                Text("Retry")
+                                Text(
+                                    text = "Retry",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             }
                         }
                     }

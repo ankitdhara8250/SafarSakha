@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -24,6 +25,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
+// ── Premium Design Tokens ────────────────────────────────────────────────────
+private val NavyColor = Color(0xFF0F172A)
+private val SkyColor = Color(0xFF0EA5E9)
+private val SlateColor = Color(0xFF64748B)
+private val BorderColor = Color(0xFFE2E8F0)
+private val BgColor = Color(0xFFFFFFFF)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileDashboardScreen(
@@ -37,51 +45,62 @@ fun ProfileDashboardScreen(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet(drawerContainerColor = Color.White) {
+            ModalDrawerSheet(
+                drawerContainerColor = BgColor,
+                drawerShape = RoundedCornerShape(topEnd = 24.dp, bottomEnd = 24.dp)
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxHeight()
-                        .padding(top = 32.dp, bottom = 16.dp)
+                        .padding(top = 40.dp, bottom = 16.dp)
                 ) {
                     Text(
                         text = "SafarSakha",
-                        fontSize = 22.sp,
+                        fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E3A8A),
+                        color = NavyColor,
+                        letterSpacing = (-0.5f).sp,
                         modifier = Modifier.padding(horizontal = 24.dp)
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Profile Menu",
                         fontSize = 13.sp,
-                        color = Color(0xFF64748B),
+                        color = SlateColor,
+                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(horizontal = 24.dp)
                     )
-                    Spacer(modifier = Modifier.height(20.dp))
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    HorizontalDivider(color = BorderColor.copy(alpha = 0.6f))
+
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     ProfileDrawerItem.entries.forEach { item ->
+                        val isSelected = item == selectedItem
+
                         NavigationDrawerItem(
                             label = {
                                 Text(
                                     text = item.title,
                                     fontSize = 15.sp,
-                                    fontWeight = if (item == selectedItem) FontWeight.SemiBold else FontWeight.Normal
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    letterSpacing = (-0.1f).sp
                                 )
                             },
-                            selected = item == selectedItem,
+                            selected = isSelected,
                             onClick = {
                                 scope.launch { drawerState.close() }
-                                if (item != selectedItem) onItemSelected(item)
+                                if (!isSelected) onItemSelected(item)
                             },
+                            shape = RoundedCornerShape(12.dp),
                             colors = NavigationDrawerItemDefaults.colors(
-                                selectedContainerColor = Color(0xFFE0ECFF),
-                                selectedTextColor = Color(0xFF1E3A8A),
-                                unselectedTextColor = Color(0xFF0F172A)
+                                selectedContainerColor = SkyColor.copy(alpha = 0.08f),
+                                selectedTextColor = SkyColor,
+                                unselectedTextColor = NavyColor.copy(alpha = 0.85f)
                             ),
                             modifier = Modifier
-                                .padding(horizontal = 12.dp)
+                                .padding(horizontal = 16.dp, vertical = 2.dp)
                                 .fillMaxWidth()
                         )
                     }

@@ -55,6 +55,7 @@ private val SlateColor = Color(0xFF64748B)
 private val BorderColor = Color(0xFFE2E8F0)
 private val BgColor = Color(0xFFFFFFFF)
 private val LightBgColor = Color(0xFFF8FAFC)
+private val SuccessColor = Color(0xFF16A34A) // Premium Green Color Token
 
 private enum class BookingStep { DATE_SELECTION, PAYMENT, PROCESSING, RESULT }
 
@@ -115,9 +116,6 @@ private class BookingFlowViewModel(
         _state.value = s.copy(step = BookingStep.PROCESSING, isProcessing = true, errorMessage = null)
 
         scope.launch {
-            // TODO: Integrate Razorpay
-            // TODO: Integrate Stripe
-            // TODO: Replace demo payment flow with real payment gateway
             delay(2000)
 
             val success = (abs(Clock.System.now().toEpochMilliseconds()) % 10) < 7
@@ -350,7 +348,7 @@ private fun DateSelectionStep(
                     Spacer(Modifier.height(10.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text(tourPackage.title, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = NavyColor, modifier = Modifier.weight(1f))
-                        Text("₹${tourPackage.price}/night", fontWeight = FontWeight.Bold, color = SkyColor, fontSize = 14.sp)
+                        Text("₹${tourPackage.price}/night", fontWeight = FontWeight.Bold, color = SuccessColor, fontSize = 14.sp)
                     }
                     Spacer(Modifier.height(4.dp))
                     Text("📍 ${tourPackage.location}", fontSize = 13.sp, color = SlateColor)
@@ -376,7 +374,7 @@ private fun DateSelectionStep(
                         SummaryRow("Duration", "$nights night${if (nights != 1) "s" else ""}")
                         SummaryRow("Price per night", "₹${tourPackage.price}")
                         HorizontalDivider(color = BorderColor)
-                        SummaryRow("Total Amount", "₹$totalAmount", bold = true)
+                        SummaryRow("Total Amount", "₹$totalAmount", bold = true, isHighlightGreen = true)
                     }
                 }
             }
@@ -476,7 +474,7 @@ private fun PaymentStep(
                     SummaryRow("End Date", endDate.toString())
                     SummaryRow("Nights", "$nights")
                     HorizontalDivider(color = BorderColor)
-                    SummaryRow("Total", "₹$totalAmount", bold = true)
+                    SummaryRow("Total", "₹$totalAmount", bold = true, isHighlightGreen = true)
                 }
             }
 
@@ -489,10 +487,6 @@ private fun PaymentStep(
                     modifier = Modifier.padding(10.dp)
                 )
             }
-
-            // TODO: Integrate Razorpay
-            // TODO: Integrate Stripe
-            // TODO: Replace demo payment flow with real payment gateway
 
             Surface(shape = RoundedCornerShape(12.dp), color = BgColor, border = borderStroke(), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -592,7 +586,7 @@ private fun ResultStep(success: Boolean, onSuccessAction: () -> Unit, onFailedAc
                 Text(
                     if (success) "Booking Confirmed!" else "Payment Failed",
                     fontWeight = FontWeight.Bold, fontSize = 22.sp,
-                    color = if (success) Color(0xFF16A34A) else Color.Red,
+                    color = if (success) SuccessColor else Color.Red,
                     textAlign = TextAlign.Center
                 )
                 Text(
@@ -719,14 +713,18 @@ private fun DatePickerField(label: String, date: LocalDate?, placeholder: String
 }
 
 @Composable
-private fun SummaryRow(label: String, value: String, bold: Boolean = false) {
+private fun SummaryRow(label: String, value: String, bold: Boolean = false, isHighlightGreen: Boolean = false) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(label, fontSize = 13.sp, color = SlateColor)
-        Text(value, fontSize = 13.sp, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal, color = if (bold) NavyColor else NavyColor)
+        Text(
+            text = value,
+            fontSize = 13.sp,
+            fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+            color = if (isHighlightGreen) SuccessColor else NavyColor
+        )
     }
 }
 
-// Utility to match the generic lightweight border look of the admin screen
 @Composable
 private fun borderStroke() = androidx.compose.foundation.BorderStroke(1.dp, BorderColor.copy(alpha = 0.5f))
 
