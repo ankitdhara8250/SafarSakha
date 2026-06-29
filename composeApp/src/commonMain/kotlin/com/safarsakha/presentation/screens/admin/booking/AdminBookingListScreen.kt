@@ -23,17 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.CreationExtras
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.safarsakha.data.remote.firebase.FirebaseBookingDataSource
-import com.safarsakha.data.repository.impl.BookingRepositoryImpl
 import com.safarsakha.domain.model.Booking
 import com.safarsakha.domain.model.BookingStatus
 import com.safarsakha.domain.model.PaymentStatus
-import com.safarsakha.domain.usecase.booking.GetAllBookingsUseCase
-import kotlin.reflect.KClass
 
 // ── Design tokens (matching UserProfileScreen) ──────────────────────────────
 private val NavyColor = Color(0xFF0F172A)
@@ -48,19 +40,10 @@ private val ErrorColor = Color(0xFFDC2626)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminBookingListScreen(
+    viewModel: AdminBookingViewModel,
     onNavigateBack: () -> Unit,
     onBookingClick: (Booking) -> Unit
 ) {
-    val bookingRepository = remember { BookingRepositoryImpl(FirebaseBookingDataSource()) }
-    val viewModel: AdminBookingViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
-                @Suppress("UNCHECKED_CAST")
-                return AdminBookingViewModel(GetAllBookingsUseCase(bookingRepository)) as T
-            }
-        }
-    )
-
     val uiState by viewModel.uiState.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Upcoming", "Previous", "Cancelled")

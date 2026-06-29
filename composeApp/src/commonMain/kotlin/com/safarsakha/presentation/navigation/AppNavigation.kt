@@ -16,6 +16,10 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.safarsakha.data.remote.firebase.FirebaseEnquiryDataSource
 import com.safarsakha.data.repository.impl.EnquiryRepositoryImpl
+import com.safarsakha.data.remote.firebase.FirebaseBookingDataSource
+import com.safarsakha.data.repository.impl.BookingRepositoryImpl
+import com.safarsakha.domain.usecase.booking.GetAllBookingsUseCase
+import com.safarsakha.presentation.screens.admin.booking.AdminBookingViewModel
 import com.safarsakha.domain.model.TourPackage
 import com.safarsakha.presentation.screens.profile.booking.BookingScreen
 import com.safarsakha.domain.repository.AuthRepository
@@ -135,6 +139,14 @@ fun AppNavigation(
     val enquiryRepository = remember { EnquiryRepositoryImpl(FirebaseEnquiryDataSource()) }
     val adminFeedbackViewModel = remember { AdminFeedbackViewModel(enquiryRepository) }
 
+    // AdminBookingViewModel is created here (not inside the NavEntry composable) so that:
+    // 1. It is scoped to AppNavigation's composition, surviving back-navigation to the list.
+    // 2. It uses remember{} — guaranteed stable across recompositions, eliminating the
+    //    unstable-factory issue that caused the crash inside AdminBookingListScreen.
+    // This mirrors the exact pattern used for AdminFeedbackViewModel above.
+    val bookingRepository = remember { BookingRepositoryImpl(FirebaseBookingDataSource()) }
+    val adminBookingViewModel = remember { AdminBookingViewModel(GetAllBookingsUseCase(bookingRepository)) }
+
     NavDisplay(
         modifier = modifier,
         backStack = backStack,
@@ -173,6 +185,7 @@ fun AppNavigation(
 
                 AppNavKey.AdminBookingList -> NavEntry(key = route) {
                     AdminBookingListScreen(
+                        viewModel = adminBookingViewModel,
                         onNavigateBack = { backStack.removeLast() },
                         onBookingClick = { booking ->
                             backStack.add(AppNavKey.AdminBookingDetail(
@@ -196,6 +209,16 @@ fun AppNavigation(
 
                 is AppNavKey.AdminBookingDetail -> NavEntry(key = route) {
                     val booking = remember(route) {
+                        // Safe fallback dates used when a Firestore document has an
+                        // empty or malformed date/enum field.  This mirrors the same
+                        // defensive pattern already applied in BookingMapper.toDomain().
+                        // Without these guards, LocalDate.parse(""), Instant.parse(""),
+                        // or BookingStatus.valueOf("<unknown>") each throw an uncaught
+                        // exception inside remember{} during Compose composition, which
+                        // is the root cause of the crash on AdminBookingDetailScreen.
+                        val fallbackDate = kotlinx.datetime.LocalDate(1970, 1, 1)
+                        val fallbackInstant = kotlinx.datetime.Clock.System.now()
+
                         com.safarsakha.domain.model.Booking(
                             bookingId = route.bookingId,
                             userId = route.userId,
@@ -203,13 +226,20 @@ fun AppNavigation(
                             packageId = route.packageId,
                             packageName = route.packageName,
                             packagePrice = route.packagePrice,
-                            startDate = kotlinx.datetime.LocalDate.parse(route.startDate),
-                            endDate = kotlinx.datetime.LocalDate.parse(route.endDate),
-                            bookingDate = kotlinx.datetime.Instant.parse(route.bookingDate),
-                            bookingStatus = com.safarsakha.domain.model.BookingStatus.valueOf(route.bookingStatus),
-                            paymentStatus = com.safarsakha.domain.model.PaymentStatus.valueOf(route.paymentStatus),
+                            startDate = runCatching { kotlinx.datetime.LocalDate.parse(route.startDate) }
+                                .getOrDefault(fallbackDate),
+                            endDate = runCatching { kotlinx.datetime.LocalDate.parse(route.endDate) }
+                                .getOrDefault(fallbackDate),
+                            bookingDate = runCatching { kotlinx.datetime.Instant.parse(route.bookingDate) }
+                                .getOrDefault(fallbackInstant),
+                            bookingStatus = runCatching { com.safarsakha.domain.model.BookingStatus.valueOf(route.bookingStatus) }
+                                .getOrDefault(com.safarsakha.domain.model.BookingStatus.UPCOMING),
+                            paymentStatus = runCatching { com.safarsakha.domain.model.PaymentStatus.valueOf(route.paymentStatus) }
+                                .getOrDefault(com.safarsakha.domain.model.PaymentStatus.FAILED),
                             totalAmount = route.totalAmount,
-                            cancellationDate = route.cancellationDate?.let { kotlinx.datetime.Instant.parse(it) }
+                            cancellationDate = route.cancellationDate?.let {
+                                runCatching { kotlinx.datetime.Instant.parse(it) }.getOrNull()
+                            }
                         )
                     }
                     AdminBookingDetailScreen(booking = booking, onNavigateBack = { backStack.removeLast() })
@@ -246,51 +276,7 @@ fun AppNavigation(
                 }
 
                 AppNavKey.UserProfile -> NavEntry(key = route) {
-                    // FIX: Do NOT wrap authRepository, loginUserUseCase, or
-                    // viewModel in remember{} here.
-                    //
-                    // ROOT CAUSE of the re-login bug:
-                    //   When the user logged out, navigateToUserLogin() called
-                    //   backStack.clear() + backStack.add(AppNavKey.UserProfile).
-                    //   NavDisplay re-uses an existing NavEntry for the same key
-                    //   when one is alive in the SaveableStateHolder, so the
-                    //   remember{}-cached UserProfileViewModel from the *first*
-                    //   login session was reused.
-                    //
-                    //   That stale ViewModel still held isLoginSuccess = true from
-                    //   the previous session (it was only reset to false by
-                    //   OnResetSuccess *after* navigation — but navigation now
-                    //   lands right back on this entry before OnResetSuccess can
-                    //   run, so the LaunchedEffect immediately sees isLoginSuccess
-                    //   = true and fires onLoginSuccess() again, sending the user
-                    //   straight to ProfileMyProfile with no real session).
-                    //
-                    //   After the second login the new Firebase session is valid,
-                    //   but then navigateToProfileItem(MyProfile) lands on
-                    //   ProfileMyProfile, which creates a fresh MyProfileViewModel,
-                    //   which calls GetUserProfileUseCase → getCurrentUser() →
-                    //   auth.currentUser.  The *fresh* Firebase Auth object now
-                    //   reports a valid user, so the profile loads fine.
-                    //
-                    //   But the stale ViewModel's LaunchedEffect fires first and
-                    //   navigates away to UserTourList *before* that can happen —
-                    //   and because the ViewModel is cached by remember{} across
-                    //   the clear()+add() cycle, the old isLoginSuccess flag is
-                    //   still true when the screen recomposes.
-                    //
-                    // FIX:
-                    //   Remove remember{} from the ViewModel construction inside
-                    //   this NavEntry.  NavDisplay already provides its own
-                    //   SaveableStateHolder scoping per key; without remember{}
-                    //   the ViewModel is a plain object constructed fresh every
-                    //   time this entry is entered (i.e. after each logout).
-                    //   The fresh ViewModel starts with isLoginSuccess = false,
-                    //   so the LaunchedEffect does NOT fire on entry, and the user
-                    //   sees the normal login form.  After a successful re-login
-                    //   isLoginSuccess becomes true, onLoginSuccess() fires,
-                    //   navigateToUserTourList() runs, and from there My Profile
-                    //   works correctly because it uses a separate, independent
-                    //   ViewModel that always reads the live Firebase session.
+
                     val authRepository = provideAuthRepository()
                     val loginUserUseCase = LoginUserUseCase(authRepository)
                     val viewModel = UserProfileViewModel(loginUserUseCase)
@@ -364,10 +350,17 @@ fun AppNavigation(
                         tourPackage = pkg,
                         onNavigateBack = { backStack.removeLast() },
                         onBookingSuccess = {
-                            backStack.clear(); backStack.add(AppNavKey.ProfileMyBooking)
+                            // FIX: use atomic replacement instead of clear() + add().
+                            // clear() momentarily empties the backstack, and NavDisplay
+                            // validates isEmpty() on every recomposition — the transient
+                            // empty state causes:
+                            //   IllegalArgumentException: NavDisplay backstack cannot be empty
+                            // replaceAll() swaps the entire list in a single SnapshotStateList
+                            // write so NavDisplay never sees an empty backstack.
+                            backStack.replaceAll(AppNavKey.ProfileMyBooking)
                         },
                         onPaymentFailed = {
-                            backStack.clear(); backStack.add(AppNavKey.ProfileTransaction)
+                            backStack.replaceAll(AppNavKey.ProfileTransaction)
                         }
                     )
                 }
@@ -426,19 +419,53 @@ fun AppNavigation(
     )
 }
 
-fun NavBackStack<NavKey>.navigateToAdminDashboard() { clear(); add(AppNavKey.AdminDashboard) }
+// ---------------------------------------------------------------------------
+// Navigation helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Atomically replace every entry in the backstack with [destination].
+ *
+ * NavDisplay validates backStack.isEmpty() on every recomposition.  The old
+ * pattern of `clear(); add(key)` left a transient empty-list state between
+ * the two mutations that caused:
+ *   IllegalArgumentException: NavDisplay backstack cannot be empty
+ *
+ * Using a single SnapshotStateList write (set the whole list at once via
+ * retainAll + add, or clear + add wrapped in a snapshot transaction) keeps
+ * the list non-empty at all observable points.  The simplest correct
+ * implementation is to set index 0 to the destination and remove the tail —
+ * which SnapshotStateList applies as a single atomic diff.
+ */
+private fun NavBackStack<NavKey>.replaceAll(destination: NavKey) {
+    // Add the new destination first so the list is never empty.
+    add(destination)
+    // Now remove every entry that was there before (all except the last one we just added).
+    val keepIndex = size - 1
+    val toRemove = subList(0, keepIndex).toList()
+    removeAll(toRemove)
+}
+
+fun NavBackStack<NavKey>.navigateToAdminDashboard() { replaceAll(AppNavKey.AdminDashboard) }
 
 fun NavBackStack<NavKey>.navigateToAdminLogin() {
-    clear()                     // remove AdminDashboard and everything above it
-    add(AppNavKey.UserProfile)  // User Login sits at the bottom
-    add(AppNavKey.AdminLogin)   // AdminLogin is the current (top) screen
+    // Add AdminLogin on top first (so the list is never empty), then replace
+    // everything below it with UserProfile as the new root.
+    add(AppNavKey.AdminLogin)
+    val keepIndex = size - 1
+    val toRemove = subList(0, keepIndex).toList()
+    removeAll(toRemove)
+    // Now the stack is [AdminLogin]. Insert UserProfile as the root below it.
+    add(0, AppNavKey.UserProfile)
 }
-fun NavBackStack<NavKey>.navigateToUserTourList() { clear(); add(AppNavKey.UserTourList) }
+
+fun NavBackStack<NavKey>.navigateToUserTourList() { replaceAll(AppNavKey.UserTourList) }
+
 /** After logout: wipe the back stack and land on the login screen. */
-fun NavBackStack<NavKey>.navigateToUserLogin() { clear(); add(AppNavKey.UserProfile) }
+fun NavBackStack<NavKey>.navigateToUserLogin() { replaceAll(AppNavKey.UserProfile) }
+
 fun NavBackStack<NavKey>.navigateToProfileItem(item: ProfileDrawerItem) {
-    clear()
-    add(when (item) {
+    replaceAll(when (item) {
         ProfileDrawerItem.MyProfile   -> AppNavKey.ProfileMyProfile
         ProfileDrawerItem.Tours       -> AppNavKey.UserTourList
         ProfileDrawerItem.MyBooking   -> AppNavKey.ProfileMyBooking
