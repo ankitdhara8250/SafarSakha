@@ -8,6 +8,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -45,6 +47,14 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlin.math.abs
 import kotlin.reflect.KClass
+
+// ── Design tokens ───────────────────────────────────────────────────────────
+private val NavyColor = Color(0xFF0F172A)
+private val SkyColor = Color(0xFF0EA5E9)
+private val SlateColor = Color(0xFF64748B)
+private val BorderColor = Color(0xFFE2E8F0)
+private val BgColor = Color(0xFFFFFFFF)
+private val LightBgColor = Color(0xFFF8FAFC)
 
 private enum class BookingStep { DATE_SELECTION, PAYMENT, PROCESSING, RESULT }
 
@@ -282,18 +292,48 @@ private fun DateSelectionStep(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Book Tour", fontWeight = FontWeight.Bold, color = Color(0xFF1E3A8A)) },
-                navigationIcon = {
-                    TextButton(onClick = onBack) { Text("Back", color = Color(0xFF1E3A8A)) }
+                title = {
+                    Column {
+                        Text(
+                            text = "Book Tour",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyColor,
+                            letterSpacing = (-0.3f).sp
+                        )
+                        Text(
+                            text = "Select your travel dates",
+                            fontSize = 12.sp,
+                            color = SlateColor
+                        )
+                    }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = NavyColor
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = BgColor,
+                    scrolledContainerColor = BgColor
+                ),
+                modifier = Modifier
+                    .border(
+                        width = 1.dp,
+                        color = BorderColor.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(0.dp)
+                    )
             )
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F7FB))
+                .background(LightBgColor)
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
@@ -301,52 +341,57 @@ private fun DateSelectionStep(
         ) {
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = Color.White,
-                shadowElevation = 2.dp,
+                color = BgColor,
+                border = borderStroke(),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("📦 Package Summary", fontWeight = FontWeight.Bold, color = Color(0xFF1E3A8A), fontSize = 14.sp)
+                    Text("📦 Package Summary", fontWeight = FontWeight.Bold, color = NavyColor, fontSize = 14.sp)
                     Spacer(Modifier.height(10.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(tourPackage.title, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color(0xFF0F172A), modifier = Modifier.weight(1f))
-                        Text("₹${tourPackage.price}/night", fontWeight = FontWeight.Bold, color = Color(0xFF1E3A8A), fontSize = 14.sp)
+                        Text(tourPackage.title, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = NavyColor, modifier = Modifier.weight(1f))
+                        Text("₹${tourPackage.price}/night", fontWeight = FontWeight.Bold, color = SkyColor, fontSize = 14.sp)
                     }
                     Spacer(Modifier.height(4.dp))
-                    Text("📍 ${tourPackage.location}", fontSize = 13.sp, color = Color(0xFF64748B))
-                    Text("⏱️ ${tourPackage.duration}", fontSize = 13.sp, color = Color(0xFF64748B))
+                    Text("📍 ${tourPackage.location}", fontSize = 13.sp, color = SlateColor)
+                    Text("⏱️ ${tourPackage.duration}", fontSize = 13.sp, color = SlateColor)
                 }
             }
 
-            Text("Select Travel Dates", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF0F172A))
+            Text("Select Travel Dates", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = NavyColor)
 
             DatePickerField(label = "Start Date", date = startDate, placeholder = "Tap to select start date", onClick = { showStartPicker = true })
             DatePickerField(label = "End Date", date = endDate, placeholder = "Tap to select end date", onClick = { showEndPicker = true })
 
             if (nights > 0) {
-                Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFEEF2FF), modifier = Modifier.fillMaxWidth()) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = LightBgColor,
+                    border = borderStroke(),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Booking Summary", fontWeight = FontWeight.Bold, color = Color(0xFF1E3A8A), fontSize = 14.sp)
-                        HorizontalDivider(color = Color(0xFFBFCFFF))
+                        Text("Booking Summary", fontWeight = FontWeight.Bold, color = NavyColor, fontSize = 14.sp)
+                        HorizontalDivider(color = BorderColor)
                         SummaryRow("Duration", "$nights night${if (nights != 1) "s" else ""}")
                         SummaryRow("Price per night", "₹${tourPackage.price}")
-                        HorizontalDivider(color = Color(0xFFBFCFFF))
+                        HorizontalDivider(color = BorderColor)
                         SummaryRow("Total Amount", "₹$totalAmount", bold = true)
                     }
                 }
             }
 
             errorMessage?.let {
-                Text(it, color = Color(0xFFDC2626), fontSize = 13.sp, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Text(it, color = Color.Red, fontSize = 13.sp, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
             }
 
             Button(
                 onClick = onNext,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
+                colors = ButtonDefaults.buttonColors(containerColor = NavyColor)
             ) {
-                Text("Continue to Payment →", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                Text("Continue to Payment →", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = Color.White)
             }
 
             Spacer(Modifier.height(32.dp))
@@ -375,39 +420,69 @@ private fun PaymentStep(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Payment", fontWeight = FontWeight.Bold, color = Color(0xFF1E3A8A)) },
-                navigationIcon = {
-                    TextButton(onClick = onBack) { Text("Back", color = Color(0xFF1E3A8A)) }
+                title = {
+                    Column {
+                        Text(
+                            text = "Payment",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyColor,
+                            letterSpacing = (-0.3f).sp
+                        )
+                        Text(
+                            text = "Secure checkout",
+                            fontSize = 12.sp,
+                            color = SlateColor
+                        )
+                    }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = NavyColor
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = BgColor,
+                    scrolledContainerColor = BgColor
+                ),
+                modifier = Modifier
+                    .border(
+                        width = 1.dp,
+                        color = BorderColor.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(0.dp)
+                    )
             )
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F7FB))
+                .background(LightBgColor)
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Surface(shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
+            Surface(shape = RoundedCornerShape(12.dp), color = BgColor, border = borderStroke(), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Order Summary", fontWeight = FontWeight.Bold, color = Color(0xFF1E3A8A), fontSize = 14.sp)
-                    HorizontalDivider(color = Color(0xFFE2E8F0))
+                    Text("Order Summary", fontWeight = FontWeight.Bold, color = NavyColor, fontSize = 14.sp)
+                    HorizontalDivider(color = BorderColor)
                     SummaryRow("Package", tourPackage.title)
                     SummaryRow("Start Date", startDate.toString())
                     SummaryRow("End Date", endDate.toString())
                     SummaryRow("Nights", "$nights")
-                    HorizontalDivider(color = Color(0xFFE2E8F0))
+                    HorizontalDivider(color = BorderColor)
                     SummaryRow("Total", "₹$totalAmount", bold = true)
                 }
             }
 
-            Text("Payment Details", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF0F172A))
+            Text("Payment Details", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = NavyColor)
 
-            Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFFFFFBEB), modifier = Modifier.fillMaxWidth()) {
+            Surface(shape = RoundedCornerShape(8.dp), color = Color(0xFFFFFBEB), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFDE68A)), modifier = Modifier.fillMaxWidth()) {
                 Text(
                     "🔒 Demo Mode — No real payment is processed",
                     fontSize = 12.sp, color = Color(0xFF92400E),
@@ -419,12 +494,12 @@ private fun PaymentStep(
             // TODO: Integrate Stripe
             // TODO: Replace demo payment flow with real payment gateway
 
-            Surface(shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
+            Surface(shape = RoundedCornerShape(12.dp), color = BgColor, border = borderStroke(), modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     OutlinedTextField(
                         value = cardHolderName,
                         onValueChange = { onCardUpdate(it, null, null, null) },
-                        label = { Text("Card Holder Name") },
+                        label = { Text("Card Holder Name", color = SlateColor) },
                         placeholder = { Text("John Doe") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
@@ -436,7 +511,7 @@ private fun PaymentStep(
                             val digits = raw.filter { it.isDigit() }.take(16)
                             onCardUpdate(null, digits, null, null)
                         },
-                        label = { Text("Card Number") },
+                        label = { Text("Card Number", color = SlateColor) },
                         placeholder = { Text("1234 5678 9012 3456") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         modifier = Modifier.fillMaxWidth(),
@@ -451,7 +526,7 @@ private fun PaymentStep(
                                 val formatted = if (digits.length >= 3) "${digits.take(2)}/${digits.drop(2)}" else digits
                                 onCardUpdate(null, null, formatted, null)
                             },
-                            label = { Text("Expiry") },
+                            label = { Text("Expiry", color = SlateColor) },
                             placeholder = { Text("MM/YY") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f),
@@ -464,7 +539,7 @@ private fun PaymentStep(
                                 val digits = raw.filter { it.isDigit() }.take(4)
                                 onCardUpdate(null, null, null, digits)
                             },
-                            label = { Text("CVV") },
+                            label = { Text("CVV", color = SlateColor) },
                             placeholder = { Text("•••") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                             modifier = Modifier.weight(1f),
@@ -476,16 +551,16 @@ private fun PaymentStep(
             }
 
             errorMessage?.let {
-                Text(it, color = Color(0xFFDC2626), fontSize = 13.sp, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+                Text(it, color = Color.Red, fontSize = 13.sp, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
             }
 
             Button(
                 onClick = onPay,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))
+                colors = ButtonDefaults.buttonColors(containerColor = NavyColor)
             ) {
-                Text("Pay ₹$totalAmount & Confirm Booking", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                Text("Pay ₹$totalAmount & Confirm Booking", fontWeight = FontWeight.SemiBold, fontSize = 15.sp, color = Color.White)
             }
 
             Spacer(Modifier.height(32.dp))
@@ -495,19 +570,19 @@ private fun PaymentStep(
 
 @Composable
 private fun ProcessingStep() {
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F7FB)), contentAlignment = Alignment.Center) {
+    Box(modifier = Modifier.fillMaxSize().background(LightBgColor), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(20.dp)) {
-            CircularProgressIndicator(color = Color(0xFF1E3A8A), strokeWidth = 3.dp, modifier = Modifier.size(56.dp))
-            Text("Processing Payment...", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = Color(0xFF0F172A))
-            Text("Please do not close this screen", fontSize = 13.sp, color = Color(0xFF64748B))
+            CircularProgressIndicator(color = SkyColor, strokeWidth = 3.dp, modifier = Modifier.size(56.dp))
+            Text("Processing Payment...", fontWeight = FontWeight.SemiBold, fontSize = 18.sp, color = NavyColor)
+            Text("Please do not close this screen", fontSize = 13.sp, color = SlateColor)
         }
     }
 }
 
 @Composable
 private fun ResultStep(success: Boolean, onSuccessAction: () -> Unit, onFailedAction: () -> Unit) {
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF5F7FB)), contentAlignment = Alignment.Center) {
-        Surface(shape = RoundedCornerShape(20.dp), color = Color.White, shadowElevation = 4.dp, modifier = Modifier.padding(32.dp).fillMaxWidth()) {
+    Box(modifier = Modifier.fillMaxSize().background(LightBgColor), contentAlignment = Alignment.Center) {
+        Surface(shape = RoundedCornerShape(20.dp), color = BgColor, border = borderStroke(), modifier = Modifier.padding(32.dp).fillMaxWidth()) {
             Column(
                 modifier = Modifier.padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -517,13 +592,13 @@ private fun ResultStep(success: Boolean, onSuccessAction: () -> Unit, onFailedAc
                 Text(
                     if (success) "Booking Confirmed!" else "Payment Failed",
                     fontWeight = FontWeight.Bold, fontSize = 22.sp,
-                    color = if (success) Color(0xFF16A34A) else Color(0xFFDC2626),
+                    color = if (success) Color(0xFF16A34A) else Color.Red,
                     textAlign = TextAlign.Center
                 )
                 Text(
                     if (success) "Your booking has been saved. You can track it in My Bookings."
                     else "Your payment could not be processed. The failed attempt has been recorded in Transactions.",
-                    fontSize = 14.sp, color = Color(0xFF64748B), textAlign = TextAlign.Center, lineHeight = 20.sp
+                    fontSize = 14.sp, color = SlateColor, textAlign = TextAlign.Center, lineHeight = 20.sp
                 )
                 Spacer(Modifier.height(8.dp))
                 Button(
@@ -531,7 +606,8 @@ private fun ResultStep(success: Boolean, onSuccessAction: () -> Unit, onFailedAc
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (success) Color(0xFF1E3A8A) else Color(0xFF64748B)
+                        containerColor = NavyColor,
+                        contentColor = Color.White
                     )
                 ) {
                     Text(if (success) "View My Bookings" else "View Transactions", fontWeight = FontWeight.SemiBold)
@@ -556,18 +632,18 @@ private fun SimpleDatePickerDialog(
     if (selectedDay > daysInMonth) selectedDay = daysInMonth
 
     Dialog(onDismissRequest = onDismiss) {
-        Surface(shape = RoundedCornerShape(16.dp), color = Color.White, modifier = Modifier.fillMaxWidth()) {
+        Surface(shape = RoundedCornerShape(16.dp), color = BgColor, modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF1E3A8A))
+                Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = NavyColor)
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = {
                         if (selectedMonth == 1) { selectedMonth = 12; selectedYear-- } else selectedMonth--
-                    }) { Text("‹", fontSize = 20.sp, color = Color(0xFF1E3A8A)) }
-                    Text("${monthName(selectedMonth)} $selectedYear", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color(0xFF0F172A))
+                    }) { Text("‹", fontSize = 20.sp, color = NavyColor) }
+                    Text("${monthName(selectedMonth)} $selectedYear", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = NavyColor)
                     TextButton(onClick = {
                         if (selectedMonth == 12) { selectedMonth = 1; selectedYear++ } else selectedMonth++
-                    }) { Text("›", fontSize = 20.sp, color = Color(0xFF1E3A8A)) }
+                    }) { Text("›", fontSize = 20.sp, color = NavyColor) }
                 }
 
                 val firstDayOffset = firstDayOfWeek(selectedYear, selectedMonth)
@@ -576,7 +652,7 @@ private fun SimpleDatePickerDialog(
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                         listOf("S", "M", "T", "W", "T", "F", "S").forEach { day ->
-                            Text(day, fontSize = 11.sp, color = Color(0xFF64748B), textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                            Text(day, fontSize = 11.sp, color = SlateColor, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
                         }
                     }
                     for (week in 0 until weeks) {
@@ -592,11 +668,11 @@ private fun SimpleDatePickerDialog(
                                             .weight(1f)
                                             .aspectRatio(1f)
                                             .padding(2.dp)
-                                            .background(if (isSelected) Color(0xFF1E3A8A) else Color.Transparent, RoundedCornerShape(50))
+                                            .background(if (isSelected) NavyColor else Color.Transparent, RoundedCornerShape(50))
                                             .clickable { selectedDay = dayNum },
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text("$dayNum", fontSize = 13.sp, color = if (isSelected) Color.White else Color(0xFF0F172A), textAlign = TextAlign.Center)
+                                        Text("$dayNum", fontSize = 13.sp, color = if (isSelected) Color.White else NavyColor, textAlign = TextAlign.Center)
                                     }
                                 }
                             }
@@ -605,12 +681,12 @@ private fun SimpleDatePickerDialog(
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.align(Alignment.End)) {
-                    TextButton(onClick = onDismiss) { Text("Cancel", color = Color(0xFF64748B)) }
+                    TextButton(onClick = onDismiss) { Text("Cancel", color = SlateColor) }
                     Button(
                         onClick = { onDateSelected(LocalDate(selectedYear, selectedMonth, selectedDay)) },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A)),
+                        colors = ButtonDefaults.buttonColors(containerColor = NavyColor),
                         shape = RoundedCornerShape(8.dp)
-                    ) { Text("Select") }
+                    ) { Text("Select", color = Color.White) }
                 }
             }
         }
@@ -620,13 +696,13 @@ private fun SimpleDatePickerDialog(
 @Composable
 private fun DatePickerField(label: String, date: LocalDate?, placeholder: String, onClick: () -> Unit) {
     Column {
-        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color(0xFF374151))
+        Text(label, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = SlateColor)
         Spacer(Modifier.height(4.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, Color(0xFFCBD5E1), RoundedCornerShape(8.dp))
-                .background(Color.White, RoundedCornerShape(8.dp))
+                .border(1.dp, BorderColor, RoundedCornerShape(8.dp))
+                .background(BgColor, RoundedCornerShape(8.dp))
                 .clickable(onClick = onClick)
                 .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
@@ -635,7 +711,7 @@ private fun DatePickerField(label: String, date: LocalDate?, placeholder: String
                 Text(
                     date?.toString() ?: placeholder,
                     fontSize = 14.sp,
-                    color = if (date != null) Color(0xFF0F172A) else Color(0xFF94A3B8)
+                    color = if (date != null) NavyColor else SlateColor
                 )
             }
         }
@@ -645,10 +721,14 @@ private fun DatePickerField(label: String, date: LocalDate?, placeholder: String
 @Composable
 private fun SummaryRow(label: String, value: String, bold: Boolean = false) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, fontSize = 13.sp, color = Color(0xFF64748B))
-        Text(value, fontSize = 13.sp, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal, color = if (bold) Color(0xFF1E3A8A) else Color(0xFF0F172A))
+        Text(label, fontSize = 13.sp, color = SlateColor)
+        Text(value, fontSize = 13.sp, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal, color = if (bold) NavyColor else NavyColor)
     }
 }
+
+// Utility to match the generic lightweight border look of the admin screen
+@Composable
+private fun borderStroke() = androidx.compose.foundation.BorderStroke(1.dp, BorderColor.copy(alpha = 0.5f))
 
 private fun formatCardNumber(digits: String): String = digits.chunked(4).joinToString(" ")
 
@@ -664,7 +744,8 @@ private fun daysInMonth(year: Int, month: Int): Int {
 private fun firstDayOfWeek(year: Int, month: Int): Int {
     val y = if (month < 3) year - 1 else year
     val m = if (month < 3) month + 12 else month
-    val k = y % 100; val j = y / 100
+    val k = y % 100
+    val j = y / 100
     val h = (1 + (13 * (m + 1)) / 5 + k + k / 4 + j / 4 + 5 * j) % 7
     return ((h + 5) % 7)
 }

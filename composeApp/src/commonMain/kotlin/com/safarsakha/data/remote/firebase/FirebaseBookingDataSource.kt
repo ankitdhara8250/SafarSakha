@@ -31,11 +31,15 @@ class FirebaseBookingDataSource {
 
     suspend fun createBooking(bookingDTO: BookingDTO): String {
         return try {
-            val docRef = firestore.collection(collectionName).add(bookingDTO)
+            // FIX: Use a single atomic write instead of add() + set().
+            // The original two-step approach (add → then set with id) created a race condition:
+            // the live snapshot listener could fire between the two writes and emit a document
+            // with bookingId = "". That caused duplicate-key crashes in LazyColumn when multiple
+            // such transient documents appeared simultaneously.
+            // Solution: generate the ID from a new document reference first, then write once.
+            val docRef = firestore.collection(collectionName).document
             val id = docRef.id
-            // Persist the generated id back inside the document so reads don't
-            // need to depend on doc.id separately (mirrors EnquiryDataSource pattern).
-            firestore.collection(collectionName).document(id).set(bookingDTO.copy(bookingId = id))
+            docRef.set(bookingDTO.copy(bookingId = id))
             id
         } catch (e: Exception) {
             throw Exception("Failed to create booking: ${e.message}")

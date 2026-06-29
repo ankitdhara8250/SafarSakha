@@ -29,10 +29,16 @@ class FirebaseTransactionDataSource {
 
     suspend fun createTransaction(transactionDTO: TransactionDTO): String {
         return try {
-            val docRef = firestore.collection(collectionName).add(transactionDTO)
+            // FIX: Same two-step race condition as FirebaseBookingDataSource.
+            // Original: add(dto) emits doc with transactionId="" → snapshot fires →
+            //   then set(dto.copy(id=id)) corrects it. If the network drops between
+            //   the two writes, the document is permanently stuck with transactionId="".
+            //   Multiple such documents cause LazyColumn to crash with "Duplicate key".
+            // Fix: generate the ID client-side from a new document reference, then
+            //   write exactly once — no gap for the snapshot listener to observe.
+            val docRef = firestore.collection(collectionName).document
             val id = docRef.id
-            // Persist the generated id back inside the document (mirrors EnquiryDataSource pattern).
-            firestore.collection(collectionName).document(id).set(transactionDTO.copy(transactionId = id))
+            docRef.set(transactionDTO.copy(transactionId = id))
             id
         } catch (e: Exception) {
             throw Exception("Failed to create transaction: ${e.message}")

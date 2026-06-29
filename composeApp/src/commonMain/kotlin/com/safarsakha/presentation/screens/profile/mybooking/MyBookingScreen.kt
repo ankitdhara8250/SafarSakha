@@ -1,6 +1,7 @@
 package com.safarsakha.presentation.screens.profile.mybooking
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,6 +11,8 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,18 +32,35 @@ import com.safarsakha.domain.usecase.booking.GetUserBookingsUseCase
 import com.safarsakha.presentation.screens.profile.profiledashboard.components.HamburgerMenuButton
 import kotlin.reflect.KClass
 
+// ── Design tokens (matching CreateTourPackageScreen / UserProfileScreen) ──────
+private val NavyColor = Color(0xFF0F172A)
+private val SkyColor = Color(0xFF0EA5E9)
+private val SlateColor = Color(0xFF64748B)
+private val BorderColor = Color(0xFFE2E8F0)
+private val BgColor = Color(0xFFFFFFFF)
+private val LightBgColor = Color(0xFFF8FAFC)
+private val ErrorColor = Color(0xFFDC2626)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyBookingScreen(onMenuClick: () -> Unit) {
-    val bookingRepository = remember { BookingRepositoryImpl(FirebaseBookingDataSource()) }
+    // Both the repository and the viewModel factory live inside the same remember{} block
     val viewModel: MyBookingViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
-                @Suppress("UNCHECKED_CAST")
-                return MyBookingViewModel(
-                    getUserBookingsUseCase = GetUserBookingsUseCase(bookingRepository),
-                    cancelBookingUseCase = CancelBookingUseCase(bookingRepository)
-                ) as T
+        factory = remember {
+            object : ViewModelProvider.Factory {
+                private val bookingRepository =
+                    BookingRepositoryImpl(FirebaseBookingDataSource())
+
+                override fun <T : ViewModel> create(
+                    modelClass: KClass<T>,
+                    extras: CreationExtras
+                ): T {
+                    @Suppress("UNCHECKED_CAST")
+                    return MyBookingViewModel(
+                        getUserBookingsUseCase = GetUserBookingsUseCase(bookingRepository),
+                        cancelBookingUseCase = CancelBookingUseCase(bookingRepository)
+                    ) as T
+                }
             }
         }
     )
@@ -62,25 +82,56 @@ fun MyBookingScreen(onMenuClick: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Bookings", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E3A8A)) },
+                title = {
+                    Column {
+                        Text(
+                            text = "My Bookings",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = NavyColor,
+                            letterSpacing = (-0.3f).sp
+                        )
+                        Text(
+                            text = "Manage your tour reservations",
+                            fontSize = 12.sp,
+                            color = SlateColor
+                        )
+                    }
+                },
                 navigationIcon = { HamburgerMenuButton(onClick = onMenuClick) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = BgColor,
+                    scrolledContainerColor = BgColor
+                ),
+                modifier = Modifier.border(
+                    width = 1.dp,
+                    color = BorderColor.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(0.dp)
+                )
             )
         }
     ) { paddingValues ->
         Column(
-            modifier = Modifier.fillMaxSize().background(Color(0xFFF5F7FB)).padding(paddingValues)
+            modifier = Modifier
+                .fillMaxSize()
+                .background(LightBgColor)
+                .padding(paddingValues)
         ) {
             TabRow(
                 selectedTabIndex = selectedTab,
-                containerColor = Color.White,
-                contentColor = Color(0xFF1E3A8A),
+                containerColor = BgColor,
+                contentColor = NavyColor,
                 indicator = { tabPositions ->
                     TabRowDefaults.SecondaryIndicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = Color(0xFF1E3A8A)
+                        color = SkyColor
                     )
-                }
+                },
+                modifier = Modifier.border(
+                    width = 1.dp,
+                    color = BorderColor.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(0.dp)
+                )
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
@@ -88,9 +139,10 @@ fun MyBookingScreen(onMenuClick: () -> Unit) {
                         onClick = { selectedTab = index },
                         text = {
                             Text(
-                                title, fontSize = 13.sp,
+                                text = title,
+                                fontSize = 13.sp,
                                 fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal,
-                                color = if (selectedTab == index) Color(0xFF1E3A8A) else Color(0xFF64748B)
+                                color = if (selectedTab == index) NavyColor else SlateColor
                             )
                         }
                     )
@@ -99,13 +151,36 @@ fun MyBookingScreen(onMenuClick: () -> Unit) {
 
             when {
                 uiState.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFF1E3A8A))
+                    CircularProgressIndicator(color = SkyColor, strokeWidth = 3.dp)
                 }
                 uiState.errorMessage != null -> Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("⚠️", fontSize = 40.sp)
-                        Text(uiState.errorMessage ?: "Something went wrong", fontSize = 14.sp, color = Color(0xFF64748B), textAlign = TextAlign.Center)
-                        Button(onClick = { viewModel.handleEvent(MyBookingEvent.LoadBookings) }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E3A8A))) { Text("Retry") }
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(ErrorColor.copy(alpha = 0.08f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("⚠️", fontSize = 24.sp)
+                        }
+                        Text(
+                            text = uiState.errorMessage ?: "Something went wrong",
+                            fontSize = 14.sp,
+                            color = SlateColor,
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Button(
+                            onClick = { viewModel.handleEvent(MyBookingEvent.LoadBookings) },
+                            colors = ButtonDefaults.buttonColors(containerColor = NavyColor),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text("Retry", fontWeight = FontWeight.SemiBold)
+                        }
                     }
                 }
                 else -> {
@@ -116,19 +191,48 @@ fun MyBookingScreen(onMenuClick: () -> Unit) {
                     }
                     if (displayList.isEmpty()) {
                         Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Text(when (selectedTab) { 0 -> "🗓️"; 1 -> "✅"; else -> "❌" }, fontSize = 44.sp)
-                                Text("No ${tabs[selectedTab].lowercase()} bookings", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color(0xFF0F172A))
-                                Text("Your ${tabs[selectedTab].lowercase()} bookings will appear here.", fontSize = 13.sp, color = Color(0xFF64748B), textAlign = TextAlign.Center)
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .clip(RoundedCornerShape(50))
+                                        .background(SkyColor.copy(alpha = 0.08f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = when (selectedTab) { 0 -> "🗓️"; 1 -> "✅"; else -> "❌" },
+                                        fontSize = 28.sp
+                                    )
+                                }
+                                Text(
+                                    text = "No ${tabs[selectedTab].lowercase()} bookings",
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 16.sp,
+                                    color = NavyColor
+                                )
+                                Text(
+                                    text = "Your ${tabs[selectedTab].lowercase()} bookings will appear here.",
+                                    fontSize = 13.sp,
+                                    color = SlateColor.copy(alpha = 0.7f),
+                                    textAlign = TextAlign.Center
+                                )
                             }
                         }
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 20.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            items(displayList, key = { it.bookingId }) { booking ->
+                            items(
+                                items = displayList,
+                                key = { booking ->
+                                    booking.bookingId.ifBlank { "fallback_${displayList.indexOf(booking)}" }
+                                }
+                            ) { booking ->
                                 BookingCard(
                                     booking = booking,
                                     showCancelAction = selectedTab == 0,
@@ -143,57 +247,158 @@ fun MyBookingScreen(onMenuClick: () -> Unit) {
     }
 }
 
+// =============================================================================
+// PREMIUM BOOKING CARD
+// =============================================================================
+
 @Composable
 private fun BookingCard(booking: Booking, showCancelAction: Boolean, onCancel: () -> Unit) {
-    Surface(shape = RoundedCornerShape(12.dp), color = Color.White, shadowElevation = 2.dp, modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = NavyColor.copy(alpha = 0.04f),
+                spotColor = NavyColor.copy(alpha = 0.08f)
+            )
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(20.dp),
+                ambientColor = NavyColor.copy(alpha = 0.02f),
+                spotColor = NavyColor.copy(alpha = 0.04f)
+            ),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = BgColor)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 1.dp,
+                    color = BorderColor.copy(alpha = 0.60f),
+                    shape = RoundedCornerShape(20.dp)
+                )
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(booking.packageName, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF0F172A))
+                    Text(
+                        text = booking.packageName,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = NavyColor,
+                        letterSpacing = (-0.2f).sp
+                    )
                     Spacer(Modifier.height(2.dp))
-                    Text("ID: ${booking.bookingId.take(8)}…", fontSize = 11.sp, color = Color(0xFF94A3B8))
+                    Text(
+                        text = "ID: ${booking.bookingId.take(8)}…",
+                        fontSize = 11.sp,
+                        color = SlateColor.copy(alpha = 0.7f),
+                        fontWeight = FontWeight.Medium
+                    )
                 }
                 BookingStatusChip(booking.bookingStatus)
             }
-            HorizontalDivider(color = Color(0xFFE2E8F0))
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Column { Text("Start", fontSize = 11.sp, color = Color(0xFF64748B)); Text(booking.startDate.toString(), fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color(0xFF0F172A)) }
-                Column { Text("End", fontSize = 11.sp, color = Color(0xFF64748B)); Text(booking.endDate.toString(), fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color(0xFF0F172A)) }
-                Column { Text("Booked On", fontSize = 11.sp, color = Color(0xFF64748B)); Text(booking.bookingDate.toString().take(10), fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color(0xFF0F172A)) }
+
+            HorizontalDivider(color = BorderColor.copy(alpha = 0.5f))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Start Date", fontSize = 11.sp, color = SlateColor, fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.height(2.dp))
+                    Text(booking.startDate.toString(), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = NavyColor)
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("End Date", fontSize = 11.sp, color = SlateColor, fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.height(2.dp))
+                    Text(booking.endDate.toString(), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = NavyColor)
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Booked On", fontSize = 11.sp, color = SlateColor, fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.height(2.dp))
+                    Text(booking.bookingDate.toString().take(10), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = NavyColor)
+                }
             }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+
+            HorizontalDivider(color = BorderColor.copy(alpha = 0.4f))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Column {
-                    Text("Total Amount", fontSize = 11.sp, color = Color(0xFF64748B))
-                    Text("₹${booking.totalAmount}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E3A8A))
+                    Text("Total Amount", fontSize = 11.sp, color = SlateColor, fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.height(1.dp))
+                    Text("₹${booking.totalAmount}", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = NavyColor)
                 }
                 PaymentStatusChip(booking.paymentStatus)
             }
+
             if (showCancelAction) {
                 Spacer(Modifier.height(4.dp))
                 OutlinedButton(
                     onClick = onCancel,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFDC2626)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFDC2626))
-                ) { Text("Cancel Booking", fontWeight = FontWeight.Medium, fontSize = 13.sp) }
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = ErrorColor),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, ErrorColor.copy(alpha = 0.6f))
+                ) {
+                    Text("Cancel Booking", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                }
             }
+
             if (booking.bookingStatus == BookingStatus.CANCELLED && booking.cancellationDate != null) {
-                Text("Cancelled on: ${booking.cancellationDate.toString().take(10)}", fontSize = 11.sp, color = Color(0xFFDC2626))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(ErrorColor.copy(alpha = 0.06f))
+                        .border(1.dp, ErrorColor.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "Cancelled on: ${booking.cancellationDate.toString().take(10)}",
+                        fontSize = 12.sp,
+                        color = ErrorColor,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }
 }
 
+// =============================================================================
+// CHIPS & DIALOG COMPONENTS
+// =============================================================================
+
 @Composable
 private fun BookingStatusChip(status: BookingStatus) {
     val (text, bg, fg) = when (status) {
-        BookingStatus.UPCOMING -> Triple("Upcoming", Color(0xFFEFF6FF), Color(0xFF1E3A8A))
+        BookingStatus.UPCOMING -> Triple("Upcoming", SkyColor.copy(alpha = 0.08f), SkyColor)
         BookingStatus.COMPLETED -> Triple("Completed", Color(0xFFF0FDF4), Color(0xFF16A34A))
-        BookingStatus.CANCELLED -> Triple("Cancelled", Color(0xFFFEF2F2), Color(0xFFDC2626))
+        BookingStatus.CANCELLED -> Triple("Cancelled", ErrorColor.copy(alpha = 0.08f), ErrorColor)
     }
-    Surface(shape = RoundedCornerShape(50), color = bg) {
-        Text(text, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = fg, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
+    Surface(shape = RoundedCornerShape(8.dp), color = bg) {
+        Text(
+            text = text,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = fg,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+        )
     }
 }
 
@@ -201,36 +406,93 @@ private fun BookingStatusChip(status: BookingStatus) {
 private fun PaymentStatusChip(status: PaymentStatus) {
     val (text, bg, fg) = when (status) {
         PaymentStatus.SUCCESS -> Triple("Paid ✓", Color(0xFFF0FDF4), Color(0xFF16A34A))
-        PaymentStatus.FAILED -> Triple("Failed ✗", Color(0xFFFEF2F2), Color(0xFFDC2626))
+        PaymentStatus.FAILED -> Triple("Failed ✗", ErrorColor.copy(alpha = 0.08f), ErrorColor)
     }
-    Surface(shape = RoundedCornerShape(50), color = bg) {
-        Text(text, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = fg, modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp))
+    Surface(shape = RoundedCornerShape(8.dp), color = bg) {
+        Text(
+            text = text,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = fg,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+        )
     }
 }
 
 @Composable
-private fun CancelBookingDialog(booking: Booking, isCancelling: Boolean, errorMessage: String?, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+private fun CancelBookingDialog(
+    booking: Booking,
+    isCancelling: Boolean,
+    errorMessage: String?,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
     AlertDialog(
         onDismissRequest = { if (!isCancelling) onDismiss() },
-        title = { Text("Cancel Booking", fontWeight = FontWeight.Bold, color = Color(0xFF0F172A)) },
+        title = {
+            Text(
+                text = "Cancel Booking",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = NavyColor
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Are you sure you want to cancel your booking for:", fontSize = 14.sp, color = Color(0xFF64748B))
-                Text(booking.packageName, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFF0F172A))
-                Text("${booking.startDate} → ${booking.endDate}", fontSize = 13.sp, color = Color(0xFF64748B))
-                errorMessage?.let { Spacer(Modifier.height(4.dp)); Text(it, color = Color(0xFFDC2626), fontSize = 13.sp) }
+                Text(
+                    text = "Are you sure you want to cancel your booking for:",
+                    fontSize = 14.sp,
+                    color = SlateColor
+                )
+                Text(
+                    text = booking.packageName,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = NavyColor
+                )
+                Text(
+                    text = "${booking.startDate} → ${booking.endDate}",
+                    fontSize = 13.sp,
+                    color = SlateColor.copy(alpha = 0.8f)
+                )
+                errorMessage?.let {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = it,
+                        color = ErrorColor,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         },
         confirmButton = {
-            Button(onClick = onConfirm, enabled = !isCancelling, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))) {
-                if (isCancelling) CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White, strokeWidth = 2.dp)
-                else Text("Yes, Cancel")
+            Button(
+                onClick = onConfirm,
+                enabled = !isCancelling,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = ErrorColor,
+                    disabledContainerColor = ErrorColor.copy(alpha = 0.45f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                if (isCancelling) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Yes, Cancel", fontWeight = FontWeight.SemiBold)
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isCancelling) { Text("Keep Booking", color = Color(0xFF1E3A8A)) }
+            TextButton(onClick = onDismiss, enabled = !isCancelling) {
+                Text("Keep Booking", color = NavyColor, fontWeight = FontWeight.SemiBold)
+            }
         },
-        containerColor = Color.White,
-        shape = RoundedCornerShape(16.dp)
+        containerColor = BgColor,
+        shape = RoundedCornerShape(20.dp)
     )
 }
