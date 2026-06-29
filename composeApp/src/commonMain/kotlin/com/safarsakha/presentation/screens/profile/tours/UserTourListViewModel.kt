@@ -110,12 +110,48 @@ class UserTourListViewModel(
         )
     }
 
-    /** Pure function so it can be reused for both initial filter and refresh re-application. */
+    /**
+     * Pure function — reused for both initial filter and refresh re-application.
+     *
+     * Matching strategy (all comparisons are case-insensitive):
+     *  1. Normalise both sides: trim outer whitespace, collapse inner runs of
+     *     whitespace/commas to a single space.
+     *  2. Check if the normalised location *contains* the normalised query.
+     *     → "Darjeeling, West Bengal" contains "darj"       ✅
+     *     → "Darjeeling, West Bengal" contains "west bengal" ✅
+     *     → "Bengaluru, Karnataka"    contains "karnataka"   ✅
+     *  3. Null or blank location values never match a non-empty query.
+     *  4. Empty / blank query is never passed here (filterByCity guards that).
+     */
     private fun applyFilter(
         allPackages: List<com.safarsakha.domain.model.TourPackage>,
         city: String
-    ): List<com.safarsakha.domain.model.TourPackage> =
-        allPackages.filter { tour ->
-            tour.location.trim().equals(city.trim(), ignoreCase = true)
+    ): List<com.safarsakha.domain.model.TourPackage> {
+        val normalisedQuery = city.normaliseLocationString()
+        return allPackages.filter { tour ->
+            val normalisedLocation = tour.location.normaliseLocationString()
+            normalisedLocation.isNotEmpty() &&
+                    normalisedLocation.contains(normalisedQuery, ignoreCase = true)
         }
+    }
+
+    /**
+     * Normalises a location string for comparison:
+     * - Trim outer whitespace.
+     * - Replace commas (with optional surrounding spaces) with a single space.
+     * - Collapse any run of whitespace into a single space.
+     * - Lower-case (done at call-site via ignoreCase = true, but kept consistent).
+     *
+     * Examples:
+     *   "Darjeeling,  West Bengal" → "darjeeling west bengal"
+     *   "  Bengaluru , Karnataka " → "bengaluru karnataka"
+     */
+    private fun String?.normaliseLocationString(): String =
+        this
+            ?.trim()
+            ?.replace(Regex("""\s*,\s*"""), " ")   // commas → space
+            ?.replace(Regex("""\s+"""), " ")         // collapse whitespace
+            ?.trim()
+            ?.lowercase()
+            ?: ""
 }
