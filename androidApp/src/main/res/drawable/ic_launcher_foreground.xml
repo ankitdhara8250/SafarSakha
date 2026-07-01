@@ -14,37 +14,37 @@
         <!-- Left face -->
         <path
             android:fillColor="#D32F2F"
-            android:pathData="M 54,54 L 40,54 L 54,18 Z" />
+            android:pathData="M 54,54 L 47,54 L 54,18 Z" />
         <!-- Right face -->
         <path
             android:fillColor="#B71C1C"
-            android:pathData="M 54,54 L 54,18 L 68,54 Z" />
+            android:pathData="M 54,54 L 54,18 L 61,54 Z" />
         <!-- Highlight -->
         <path
             android:fillColor="#EF5350"
-            android:pathData="M 54,54 L 44,54 L 54,26 Z" />
+            android:pathData="M 54,54 L 49,54 L 54,26 Z" />
         <!-- Edge glint -->
         <path
             android:fillColor="#FF8A80"
-            android:pathData="M 54,22 L 54,54 L 52,54 Z" />
+            android:pathData="M 54,22 L 54,54 L 53,54 Z" />
 
         <!-- ===== SOUTH NEEDLE (NAVY) ===== -->
         <!-- Left face -->
         <path
             android:fillColor="#0D1B2A"
-            android:pathData="M 54,54 L 40,54 L 54,90 Z" />
+            android:pathData="M 54,54 L 47,54 L 54,90 Z" />
         <!-- Right face -->
         <path
             android:fillColor="#1A3A5C"
-            android:pathData="M 54,54 L 54,90 L 68,54 Z" />
+            android:pathData="M 54,54 L 54,90 L 61,54 Z" />
         <!-- Highlight -->
         <path
             android:fillColor="#2A5A8A"
-            android:pathData="M 54,54 L 46,54 L 54,76 Z" />
+            android:pathData="M 54,54 L 49,54 L 54,76 Z" />
         <!-- Edge glint -->
         <path
             android:fillColor="#4A8ABA"
-            android:pathData="M 54,62 L 54,54 L 56,54 Z" />
+            android:pathData="M 54,62 L 54,54 L 55,54 Z" />
 
         <!-- ===== CENTER PIN ===== -->
         <!-- Outer ring -->
